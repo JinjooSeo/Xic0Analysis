@@ -1,20 +1,20 @@
 //#include "DrawTool.C"
 
-TH1D* GetEfficiency(TFile* WeightedROOTFile, TFile* MCROOTFile, const Char_t* Cut, const Char_t* CutFlag, Bool_t IsWeighted, Bool_t DrawOption = kFALSE){
+TH1D* GetPromptEfficiency(TFile* WeightedROOTFile, TFile* MCROOTFile, const Char_t* Cut, const Char_t* CutFlag, Bool_t IsWeighted, Bool_t DrawOption = kFALSE){
   TH1D* hGenXic0 = new TH1D;
   TH1D* hRecoXic0 = new TH1D;
   TH1D* hefficiency = new TH1D;
   Double_t bin[8] = {1.,2.,3.,4.,5.,6.,8.,12.};
 
   if(IsWeighted){
-    hGenXic0 = (TH1D*) WeightedROOTFile->Get("hMCGenLevXic0_incW");
-    hRecoXic0 = (TH1D*) WeightedROOTFile->Get(Form("hMCRecoLevXic0_%s_%s",Cut,CutFlag));
+    hGenXic0 = (TH1D*) MCROOTFile->Get("hMCGenLevXic_p");
+    hRecoXic0 = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevPromptXic0_%s_%s",Cut,CutFlag));
     hefficiency = (TH1D*) hRecoXic0->Rebin(7,Form("efficiency_%s_%s",Cut,CutFlag),bin);
     hefficiency->Divide(hefficiency,hGenXic0,1,1,"b");
   }
   else{
-    hGenXic0 = (TH1D*) MCROOTFile->Get("hMCGenLevXic0_inc");
-    hRecoXic0 = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevXic0_%s_%s",Cut,CutFlag));
+    hGenXic0 = (TH1D*) MCROOTFile->Get("hMCGenLevXic_p");
+    hRecoXic0 = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevPromptXic0_%s_%s",Cut,CutFlag));
     hefficiency = (TH1D*) hRecoXic0->Rebin(7,Form("efficiency_%s_%s",Cut,CutFlag),bin);
     hefficiency->Divide(hefficiency,hGenXic0,1,1,"b");
   }
@@ -65,14 +65,14 @@ TH1D* GetEfficiency(TFile* WeightedROOTFile, TFile* MCROOTFile, const Char_t* Cu
     SetAxis(hratio,"#it{p}_{T}(#Xi_{c}^{0}) (GeV/#it{c})","weighted/unweighted");
 
 
-    can[0]->SaveAs(Form("WeightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
-    can[1]->SaveAs(Form("WeightedUnweightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
-    can[2]->SaveAs(Form("RatioOfWeightedUnweightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
+    can[0]->SaveAs(Form("PromptWeightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
+    can[1]->SaveAs(Form("PromptWeightedUnweightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
+    can[2]->SaveAs(Form("PromptRatioOfWeightedUnweightedEfficiencyOfXic_%s_%s.pdf",Cut,CutFlag));
 
     delete[] can;
   }
 
-  //delete hRecoXic0;
+  delete hRecoXic0;
 
   return hefficiency;
 }

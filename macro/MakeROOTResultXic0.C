@@ -37,7 +37,7 @@ void MakeROOTResultXic0()
   cout << "IS Train Output ? (1 or 0) ";
   cin >> IsTrainOutput;
   cout << endl;
-  if(IsMC) input = TFile::Open("/Users/jinjoo/Desktop/Xic0/data/Download/final_mc/AnalysisResultsMCFinal.root");
+  if(IsMC) input = TFile::Open("/Users/jinjoo/Desktop/Xic0/data/Download/MC0815/AnalysisResultsMC.root");
   if(!IsMC) input = TFile::Open("/Users/jinjoo/Desktop/Xic0/data/Download/train_data/AnalysisResults_data.root");
   if(IsTrainOutput) TrainInput = (TFile*) input->Get("PWG3_D2H_Xic02eXipp13TeV");
   if(!IsTrainOutput) GridInput = (TFile*) input;
@@ -53,7 +53,7 @@ void MakeAnalysisHistogram(TFile* input, Bool_t IsMC){
 
   if(IsMC){
     cout << "---------------------MC reconstructed histogram---------------------" << endl;
-    file = new TFile("MCAnalysisHistogram.root","recreate");
+    file = new TFile("MCWeightedAnalysisHistogram.root","recreate");
   }
   if(!IsMC){
     cout << "---------------------Data reconstructed histogram---------------------" << endl;
@@ -149,9 +149,9 @@ TH2F* MakeTH2(const Char_t *name, Int_t NumOfBin, Double_t* binning){
 }
 
 void eXiPairTree(TFile* input, Bool_t IsMC){
-  TF1 * fWeightFit = new TF1("fWeightFit","1",0,12);
-  //fWeightFit -> SetParameter(0,1.06549e-00);
-  //fWeightFit -> SetParameter(1,-2.98456e-01);
+  TF1 * fWeightFit = new TF1("fWeightFit","expo",0,12);
+  fWeightFit -> SetParameter(0,7.48584e-01);
+  fWeightFit -> SetParameter(1,-1.47142e-01);
 
  // Double_t binning1[8] = {0,1.,2.,3.2,4.4,6.,8.,12.};
   //Double_t binning1[8] = {1.,2.,3.,4.,5.,6.,8.,12.};
@@ -535,6 +535,38 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
   TH1F* hMCRecoLevXib_op_tight = MakeTH1("hMCRecoLevXib_OA_tight",9,binning2);
   TH1F* hMCRecoLevPairXib_op_tight = MakeTH1("hMCRecoLevPairXib_OA_tight",9,binning2);
 
+  TH1F* hMCRecoLevPromptXic0_eRec_stand = MakeTH1("hMCRecoLevPromptXic0_eRec_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_eRec_vloose = MakeTH1("hMCRecoLevPromptXic0_eRec_vloose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_eRec_loose = MakeTH1("hMCRecoLevPromptXic0_eRec_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_eRec_tight = MakeTH1("hMCRecoLevPromptXic0_eRec_tight",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_eRec_vtight = MakeTH1("hMCRecoLevPromptXic0_eRec_vtight",9,binning2);
+
+  TH1F* hMCRecoLevPromptXic0_XiRec_stand = MakeTH1("hMCRecoLevPromptXic0_XiRec_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiRec_vloose = MakeTH1("hMCRecoLevPromptXic0_XiRec_vloose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiRec_loose = MakeTH1("hMCRecoLevPromptXic0_XiRec_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiRec_tight = MakeTH1("hMCRecoLevPromptXic0_XiRec_tight",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiRec_vtight = MakeTH1("hMCRecoLevPromptXic0_XiRec_vtight",9,binning2);
+
+  TH1F* hMCRecoLevPromptXic0_ePID_stand = MakeTH1("hMCRecoLevPromptXic0_ePID_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_ePID_vloose = MakeTH1("hMCRecoLevPromptXic0_ePID_vloose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_ePID_loose = MakeTH1("hMCRecoLevPromptXic0_ePID_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_ePID_tight = MakeTH1("hMCRecoLevPromptXic0_ePID_tight",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_ePID_vtight = MakeTH1("hMCRecoLevPromptXic0_ePID_vtight",9,binning2);
+
+  TH1F* hMCRecoLevPromptXic0_XiPID_stand = MakeTH1("hMCRecoLevPromptXic0_XiPID_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiPID_vloose = MakeTH1("hMCRecoLevPromptXic0_XiPID_vloose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiPID_loose = MakeTH1("hMCRecoLevPromptXic0_XiPID_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiPID_tight = MakeTH1("hMCRecoLevPromptXic0_XiPID_tight",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_XiPID_vtight = MakeTH1("hMCRecoLevPromptXic0_XiPID_vtight",9,binning2);
+
+  TH1F* hMCRecoLevPromptXic0_IM_stand = MakeTH1("hMCRecoLevPromptXic0_IM_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_IM_loose = MakeTH1("hMCRecoLevPromptXic0_IM_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_IM_tight = MakeTH1("hMCRecoLevPromptXic0_IM_tight",9,binning2);
+
+  TH1F* hMCRecoLevPromptXic0_OA_stand = MakeTH1("hMCRecoLevPromptXic0_OA_stand",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_OA_loose = MakeTH1("hMCRecoLevPromptXic0_OA_loose",9,binning2);
+  TH1F* hMCRecoLevPromptXic0_OA_tight = MakeTH1("hMCRecoLevPromptXic0_OA_tight",9,binning2);
+
   TH1F *hprompt = MakeTH1("hprompt",7,binning1); TH1F *hnonprompt = MakeTH1("hnonprompt",7,binning1); TH1F *hinclu = MakeTH1("hinclu",7,binning1);
   TH2F* hRPM_preliminary = new TH2F("hWRPM_preliminary","",60,1,20,60,1,20); hRPM_preliminary->Sumw2();
 
@@ -784,14 +816,15 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(fabs(mcXib) != 9999  && echarge*vcharge>0 && Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && OPAngle_Stand_flag && e_Recon_Stand_flag) htest4->Fill(In_Mass);
 			if(fabs(mcXib) != 9999 && echarge*vcharge>0 && Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && PairMass_Stand_flag && e_Recon_Stand_flag) htest5->Fill(cosoa);
-            if(fabs(mcptXic0) == 9999.) continue;
+            //if(fabs(mcptXic0) == 9999.) continue;
 
             if(Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && OPAngle_Stand_flag && PairMass_Stand_flag){
               if(e_Recon_VTight_flag){
-                hRPM_eRec_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_eRec_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_eRec_vtight->Fill(mcptXic0);
-                hMCRecoLevPair_eRec_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_eRec_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_eRec_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_eRec_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_eRec_vtight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_eRec_vtight->Fill(mcXib);
@@ -799,10 +832,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_Recon_Tight_flag){
-                hRPM_eRec_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_eRec_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_eRec_tight->Fill(mcptXic0);
-                hMCRecoLevPair_eRec_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_eRec_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_eRec_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_eRec_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_eRec_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_eRec_tight->Fill(mcXib);
@@ -810,10 +844,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_Recon_Stand_flag) {
-                hRPM_eRec_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_eRec_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_eRec_stand->Fill(mcptXic0);
-                hMCRecoLevPair_eRec_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_eRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_eRec_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_eRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_eRec_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_eRec_stand->Fill(mcXib);
@@ -821,10 +856,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_Recon_Loose_flag){
-                hRPM_eRec_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_eRec_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_eRec_loose->Fill(mcptXic0);
-                hMCRecoLevPair_eRec_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_eRec_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_eRec_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_eRec_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_eRec_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_eRec_loose->Fill(mcXib);
@@ -832,10 +868,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_Recon_VLoose_flag){
-                hRPM_eRec_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_eRec_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_eRec_vloose->Fill(mcptXic0);
-                hMCRecoLevPair_eRec_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_eRec_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_eRec_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_eRec_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_eRec_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_eRec_vloose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_eRec_vloose->Fill(mcXib);
@@ -845,10 +882,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(e_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && OPAngle_Stand_flag && PairMass_Stand_flag){
               if(Xi_Recon_VTight_flag) {
-                hRPM_XiRec_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiRec_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiRec_vtight->Fill(mcptXic0);
-                hMCRecoLevPair_XiRec_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiRec_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiRec_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiRec_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiRec_vtight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiRec_vtight->Fill(mcXib);
@@ -856,10 +894,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Recon_Tight_flag) {
-                hRPM_XiRec_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiRec_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiRec_tight->Fill(mcptXic0);
-                hMCRecoLevPair_XiRec_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiRec_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiRec_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiRec_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiRec_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiRec_tight->Fill(mcXib);
@@ -867,10 +906,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Recon_Stand_flag) {
-                hRPM_XiRec_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiRec_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiRec_stand->Fill(mcptXic0);
-                hMCRecoLevPair_XiRec_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiRec_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiRec_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiRec_stand->Fill(mcXib);
@@ -878,10 +918,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Recon_Loose_flag) {
-                hRPM_XiRec_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiRec_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiRec_loose->Fill(mcptXic0);
-                hMCRecoLevPair_XiRec_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiRec_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiRec_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiRec_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiRec_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiRec_loose->Fill(mcXib);
@@ -889,10 +930,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Recon_VLoose_flag) {
-                hRPM_XiRec_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiRec_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiRec_vloose->Fill(mcptXic0);
-                hMCRecoLevPair_XiRec_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiRec_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiRec_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiRec_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiRec_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiRec_vloose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiRec_vloose->Fill(mcXib);
@@ -902,10 +944,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(e_Recon_Stand_flag && Xi_Recon_Stand_flag && Xi_Topology_Stand_flag && OPAngle_Stand_flag && PairMass_Stand_flag){
               if(e_PID_VTight_flag) {
-                hRPM_ePID_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_ePID_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_ePID_vtight->Fill(mcptXic0);
-                hMCRecoLevPair_ePID_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_ePID_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_ePID_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_ePID_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_ePID_vtight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_ePID_vtight->Fill(mcXib);
@@ -913,10 +956,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_PID_Tight_flag) {
-                hRPM_ePID_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_ePID_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_ePID_tight->Fill(mcptXic0);
-                hMCRecoLevPair_ePID_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_ePID_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_ePID_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_ePID_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_ePID_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_ePID_tight->Fill(mcXib);
@@ -924,10 +968,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_PID_Stand_flag) {
-                hRPM_ePID_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_ePID_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_ePID_stand->Fill(mcptXic0);
-                hMCRecoLevPair_ePID_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_ePID_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_ePID_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_ePID_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_ePID_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_ePID_stand->Fill(mcXib);
@@ -935,10 +980,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_PID_Loose_flag) {
-                hRPM_ePID_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_ePID_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_ePID_loose->Fill(mcptXic0);
-                hMCRecoLevPair_ePID_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_ePID_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_ePID_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_ePID_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_ePID_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_ePID_loose->Fill(mcXib);
@@ -946,10 +992,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(e_PID_VLoose_flag) {
-                hRPM_ePID_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_ePID_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_ePID_vloose->Fill(mcptXic0);
-                hMCRecoLevPair_ePID_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_ePID_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_ePID_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_ePID_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_ePID_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_ePID_vloose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_ePID_vloose->Fill(mcXib);
@@ -959,10 +1006,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag && OPAngle_Stand_flag && PairMass_Stand_flag){
               if(Xi_Topology_VTight_flag) {
-                hRPM_XiPID_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiPID_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiPID_vtight->Fill(mcptXic0);
-                hMCRecoLevPair_XiPID_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_vtight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_vtight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiPID_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiPID_vtight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiPID_vtight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiPID_vtight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiPID_vtight->Fill(mcXib);
@@ -970,10 +1018,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Topology_Tight_flag) {
-                hRPM_XiPID_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiPID_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiPID_tight->Fill(mcptXic0);
-                hMCRecoLevPair_XiPID_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiPID_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiPID_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiPID_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiPID_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiPID_tight->Fill(mcXib);
@@ -981,10 +1030,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Topology_Stand_flag) {
-                hRPM_XiPID_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiPID_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiPID_stand->Fill(mcptXic0);
-                hMCRecoLevPair_XiPID_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiPID_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiPID_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiPID_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiPID_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiPID_stand->Fill(mcXib);
@@ -992,10 +1042,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Topology_Loose_flag) {
-                hRPM_XiPID_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiPID_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiPID_loose->Fill(mcptXic0);
-                hMCRecoLevPair_XiPID_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiPID_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiPID_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiPID_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiPID_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiPID_loose->Fill(mcXib);
@@ -1003,10 +1054,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(Xi_Topology_VLoose_flag) {
-                hRPM_XiPID_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_XiPID_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_XiPID_vloose->Fill(mcptXic0);
-                hMCRecoLevPair_XiPID_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_vloose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_XiPID_vloose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_XiPID_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_XiPID_vloose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_XiPID_vloose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_XiPID_vloose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_XiPID_vloose->Fill(mcXib);
@@ -1016,10 +1068,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && PairMass_Stand_flag){
               if(OPAngle_Tight_flag) {
-                hRPM_op_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_op_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_op_tight->Fill(mcptXic0);
-                hMCRecoLevPair_op_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_op_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_op_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_op_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_op_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_OA_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_op_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_op_tight->Fill(mcXib);
@@ -1027,10 +1080,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(OPAngle_Stand_flag) {
-                hRPM_op_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_op_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_op_stand->Fill(mcptXic0);
-                hMCRecoLevPair_op_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_op_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_op_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_op_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_op_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_OA_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_op_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_op_stand->Fill(mcXib);
@@ -1038,10 +1092,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(OPAngle_Loose_flag) {
-                hRPM_op_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_op_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_op_loose->Fill(mcptXic0);
-                hMCRecoLevPair_op_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_op_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_op_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_op_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_op_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_OA_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_op_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_op_loose->Fill(mcXib);
@@ -1051,10 +1106,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
             }
             if(e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag && OPAngle_Stand_flag){
               if(PairMass_Tight_flag) {
-                hRPM_im_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_im_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_im_tight->Fill(mcptXic0);
-                hMCRecoLevPair_im_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_im_tight->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_im_tight_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_im_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_im_tight->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_IM_tight->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_im_tight_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_im_tight->Fill(mcXib);
@@ -1062,10 +1118,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(PairMass_Stand_flag) {
-                hRPM_im_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_im_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_im_stand->Fill(mcptXic0);
-                hMCRecoLevPair_im_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_im_stand->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_im_stand_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_im_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_im_stand->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_IM_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_im_stand_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_im_stand->Fill(mcXib);
@@ -1073,10 +1130,11 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
                 }
               }
               if(PairMass_Loose_flag) {
-                hRPM_im_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
-                hRPM_im_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
-                hMCRecoLevXic0_im_loose->Fill(mcptXic0);
-                hMCRecoLevPair_im_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999) hRPM_im_loose->Fill(mcptXic0,Pt,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hRPM_im_loose_un->Fill(Pt,mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevXic0_im_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+                if(fabs(mcptXic0) != 9999) hMCRecoLevPair_im_loose->Fill(Pt);
+                if(fabs(mcptXic0) != 9999 &&  mcc_flag == 1) hMCRecoLevPromptXic0_IM_loose->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
                 if(echarge*vcharge>0 && fabs(mcXib) != 9999){
                   hRPM_im_loose_Xib->Fill(mcXib,XibeXi);
                   hMCRecoLevXib_im_loose->Fill(mcXib);
@@ -1085,7 +1143,6 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
               }
             }
             if(echarge*vcharge<0 && e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag && Xi_Topology_Stand_flag){
-              //cout << mcc_flag << endl;
               if(mcc_flag == 1){ if(OPAngle_Stand_flag && PairMass_Stand_flag) hprompt->Fill(mcptXic0); }
               if(mcb_flag == 1){ if(OPAngle_Stand_flag && PairMass_Stand_flag) hnonprompt->Fill(mcptXic0); }
               if(OPAngle_Stand_flag && PairMass_Stand_flag) hinclu->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
@@ -1100,6 +1157,7 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
         TH1F* hMCGenLevXic0_incW8 = new TH1F;
         TH1F* hMCGenLevXic01_p = new TH1F;
         TH1F* hMCGenLevXic02_p = new TH1F;
+        TH1F* hMCGenLevXic_p = new TH1F;
         TH1F* hMCGenLevXic01_np = new TH1F;
         TH1F* hMCGenLevXic02_np = new TH1F;
         TH1F* hMCRecoLevXic0_inc = new TH1F;
@@ -1142,6 +1200,8 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
           hMCRecoLevXic0_np = (TH1F*) hMCRecoLevXic0_np->Clone("hMCRecoLevXic0_np");
           hMCRecoLevXic0_p = (TH1F*) hist->FindObject("hGenXic0PtFromXic");
           hMCRecoLevXic0_p = (TH1F*) hMCRecoLevXic0_p->Clone("hMCRecoLevXic0_p");
+          hMCGenLevXic_p = (TH1F*) hist->FindObject("hXic0PtFromCharmW");
+          hMCGenLevXic_p = (TH1F*) hMCGenLevXic_p->Clone("hMCGenLevXic_pW");
           XibGen = (TH1F*) hist->FindObject("XibGen");
           XibGen = (TH1F*) XibGen->Clone("XibGen");
           XibGen05 = (TH1F*) hist->FindObject("XibGen05");
@@ -1156,6 +1216,8 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
           eff_np->Divide(hnonprompt,eff_np,1,1,"b"); //eff_np->Scale(1.4);
           eff_inc_2 = (TH1F*) hinclu->Clone("eff_inc_2");
           eff_inc_2->Divide(eff_inc_2,hMCGenLevXic0_incW,1,1,"b");
+          TH1F* hPromptXic0 = (TH1F*) hMCGenLevXic01_p->Clone("hMCGenLevXic_p");
+          hPromptXic0->Add(hMCGenLevXic02_p,2);
           NonPromptXicRap = (TH1F*) hist->FindObject("hNonPromptXicRap");
           NonPromptXicRap = (TH1F*) NonPromptXicRap->Clone("hNonPromptXicRap");
           PromptXicRap = (TH1F*) hist->FindObject("hPromptXicRap");
@@ -1176,43 +1238,75 @@ void eXiPairTree(TFile* input, Bool_t IsMC){
         TH1F *hXic0_Svd_stand4 = (TH1F*) hMCRecoLevXic0_XiPID_stand->Clone("hXic0_Svd_stand4");
         TH1F *hXic0_Svd_stand5 = (TH1F*) hMCRecoLevXic0_XiPID_stand->Clone("hXic0_Svd_stand5");
 
-        TH2F* hRPM_Unfold_stand2 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand2_pt2");
-        TH2F* hRPM_Unfold_stand3 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand3_pt2");
-        TH2F* hRPM_Unfold_stand4 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand4_pt2");
-        TH2F* hRPM_Unfold_stand5 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand5_pt2");
-        TH2F* hRPM_Unfold_stand6 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand6_pt2");
-        TH2F* hRPM_Unfold_stand7 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand7_pt2");
+        TH2F* hRPM_Unfold_stand2 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand2");
+        TH2F* hRPM_Unfold_stand3 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand3");
+        TH2F* hRPM_Unfold_stand4 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand4");
+        TH2F* hRPM_Unfold_stand5 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand5");
+        TH2F* hRPM_Unfold_stand6 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand6");
+        TH2F* hRPM_Unfold_stand7 = (TH2F*) hRPM_im_stand->Clone("hRPM_Bayes_stand7");
         TH2F* hRPM_Unfold_stand2_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand2_un");
         TH2F* hRPM_Unfold_stand3_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand3_un");
         TH2F* hRPM_Unfold_stand4_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand4_un");
         TH2F* hRPM_Unfold_stand5_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand5_un");
         TH2F* hRPM_Unfold_stand6_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand6_un");
         TH2F* hRPM_Unfold_stand7_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Bayes_stand7_un");
-        TH1F* hMCRecoLevXic0_Unfold_stand2 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand2_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand2 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand2_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand3 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand3_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand3 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand3_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand4 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand4_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand4 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand4_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand5 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand5_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand5 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand5_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand6 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand6_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand6 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand6_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand7 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand7_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand7 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand7_pt2");
+        TH1F* hMCRecoLevXic0_Unfold_stand2 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand2");
+        TH1F* hMCRecoLevPair_Unfold_stand2 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand2");
+        TH1F* hMCRecoLevXic0_Unfold_stand3 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand3");
+        TH1F* hMCRecoLevPair_Unfold_stand3 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand3");
+        TH1F* hMCRecoLevXic0_Unfold_stand4 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand4");
+        TH1F* hMCRecoLevPair_Unfold_stand4 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand4");
+        TH1F* hMCRecoLevXic0_Unfold_stand5 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand5");
+        TH1F* hMCRecoLevPair_Unfold_stand5 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand5");
+        TH1F* hMCRecoLevXic0_Unfold_stand6 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand6");
+        TH1F* hMCRecoLevPair_Unfold_stand6 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand6");
+        TH1F* hMCRecoLevXic0_Unfold_stand7 = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Bayes_stand7");
+        TH1F* hMCRecoLevPair_Unfold_stand7 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand7");
+
+        TH1F* hRPM_Bayes_stand2_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand2_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand2 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand2");
+        TH1F* hMCRecoLevPairXib_Bayes_stand2 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand2");
+        TH1F* hRPM_Bayes_stand3_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand3_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand3 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand3");
+        TH1F* hMCRecoLevPairXib_Bayes_stand3 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand3");
+        TH1F* hRPM_Bayes_stand4_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand4_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand4 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand4");
+        TH1F* hMCRecoLevPairXib_Bayes_stan4 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand4");
+        TH1F* hRPM_Bayes_stand5_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand5_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand5 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand5");
+        TH1F* hMCRecoLevPairXib_Bayes_stand5 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand5");
+        TH1F* hRPM_Bayes_stand6_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand6_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand6 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand6");
+        TH1F* hMCRecoLevPairXib_Bayes_stand6 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand6");
+        TH1F* hRPM_Bayes_stand7_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Bayes_stand7_Xib");
+        TH1F* hMCRecoLevXib_Bayes_stand7 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Bayes_stand7");
+        TH1F* hMCRecoLevPairXib_Bayes_stand7 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Bayes_stand7");
+
+        TH1F* hRPM_Svd_stand3_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Svd_stand3_Xib");
+        TH1F* hMCRecoLevXib_Svd_stand3 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Svd_stand3");
+        TH1F* hMCRecoLevPairXib_Svd_stand3 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Svd_stand3");
+        TH1F* hRPM_Svd_stand4_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Svd_stand4_Xib");
+        TH1F* hMCRecoLevXib_Svd_stand4 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Svd_stand4");
+        TH1F* hMCRecoLevPairXib_Svd_stand4 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Svd_stand4");
+        TH1F* hRPM_Svd_stand5_Xib = (TH1F*) hRPM_op_stand_Xib->Clone("hRPM_Svd_stand5_Xib");
+        TH1F* hMCRecoLevXib_Svd_stand5 = (TH1F*) hMCRecoLevXib_op_stand->Clone("hMCRecoLevXib_Svd_stand5");
+        TH1F* hMCRecoLevPairXib_Svd_stand5 = (TH1F*) hMCRecoLevPairXib_op_stand->Clone("hMCRecoLevPairXib_Svd_stand5");
+
+
+
 
         TH2F* hRPM_Unfold_stand3_s_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Svd_stand3_un");
         TH2F* hRPM_Unfold_stand4_s_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Svd_stand4_un");
         TH2F* hRPM_Unfold_stand5_s_un = (TH2F*) hRPM_im_stand_un->Clone("hRPM_Svd_stand5_un");
-        TH2F* hRPM_Unfold_stand3_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand3_pt2");
-        TH2F* hRPM_Unfold_stand4_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand4_pt2");
-        TH2F* hRPM_Unfold_stand5_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand5_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand3_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand3_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand3_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand3_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand4_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand4_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand4_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand4_pt2");
-        TH1F* hMCRecoLevXic0_Unfold_stand5_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand5_pt2");
-        TH1F* hMCRecoLevPair_Unfold_stand5_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand5_pt2");
+        TH2F* hRPM_Unfold_stand3_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand3");
+        TH2F* hRPM_Unfold_stand4_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand4");
+        TH2F* hRPM_Unfold_stand5_s = (TH2F*) hRPM_im_stand->Clone("hRPM_Svd_stand5");
+        TH1F* hMCRecoLevXic0_Unfold_stand3_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand3");
+        TH1F* hMCRecoLevPair_Unfold_stand3_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand3");
+        TH1F* hMCRecoLevXic0_Unfold_stand4_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand4");
+        TH1F* hMCRecoLevPair_Unfold_stand4_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand4");
+        TH1F* hMCRecoLevXic0_Unfold_stand5_s = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hMCRecoLevXic0_Svd_stand5");
+        TH1F* hMCRecoLevPair_Unfold_stand5_s = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Svd_stand5");
 
         TH1F *hRawPt_VTePID = (TH1F*) hPtRS_VTePID->Clone("hRawPt_ePID_vtight"); hRawPt_VTePID->Add(hPtWS_VTePID,-1);
         TH1F *hRawPt_TePID = (TH1F*) hPtRS_TePID->Clone("hRawPt_ePID_tight"); hRawPt_TePID->Add(hPtWS_TePID,-1);
