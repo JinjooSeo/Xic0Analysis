@@ -23,6 +23,10 @@
 #include "AliRDHFCutsXictoeleXifromAODtracks.h"
 #include <vector>
 
+//kimc
+#include <iostream>
+using namespace std;
+
 class AliNormalizationCounter;
 
 class AliAnalysisTaskSEXic0RunTable
@@ -93,8 +97,8 @@ class AliAnalysisTaskSEXic0Semileptonic : public AliAnalysisTaskSE
 				               Bool_t e_reco, Bool_t e_pid, Bool_t Xi_reco, Bool_t Xi_pid);
 		void SetFitParameter1(Double_t par1) { fPar1 = par1; };
 		void SetFitParameter2(Double_t par2) { fPar2 = par2; };
-		Bool_t GetFitParameter1() { return fPar1; }
-		Bool_t GetFitParameter2() { return fPar2; }
+		Double_t GetFitParameter1() { return fPar1; }
+		Double_t GetFitParameter2() { return fPar2; }
 
 		unsigned int GetEvID();
 		void CheckXic0Info(AliAODTrack *trk, AliAODcascade *casc);
@@ -142,12 +146,14 @@ class AliAnalysisTaskSEXic0Semileptonic : public AliAnalysisTaskSE
 
 		Int_t   fRunNumber = 0; //!
 		Int_t   fNSPDTracklets = 0; //kimc
-		Float_t fPtCut = 0.5; //lower limit of electron
-		Float_t fEtaCut = 0.8; //for daugther particle
-		Float_t fCentrality = 9999; //!
-		Float_t fCentralSPD = 9999; //kimc
-		Float_t fRunOffset = 0; //!
+		Int_t   fNeXiPair      = 0; //kimc
 		Float_t fBzkG = 0; //! Magnetic filed for of event
+		Float_t fCentrality = 9999; //!
+		Float_t fEtaCut = 0.8; //for daugther particle
+		Float_t fPtCut = 0.5; //lower limit of electron
+		Float_t fRunOffset = 0; //!
+		Float_t fCentralSPD = 9999; //kimc
+		Float_t fVtxZ       = 9999; //kimc
 
 		Double_t MassTolLambda = 0.008;
 		Double_t MassTolXi = 0.01;

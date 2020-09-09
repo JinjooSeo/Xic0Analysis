@@ -4,6 +4,20 @@ macros are not ready yet (need to confirm)
 
 //-----------------------------------------------
 
+Updates at Sep. 9 (kimc)
+
+	1. Enforced EventTree sync to eXiTree
+		a. EventTree is filled only if eXiTree is filled
+		b. Added variable " fNeXiPair " under EventTree to enable event by event distinction:
+		   if ( fNeXiPair != 0 ) it means those entries are duplication of same event
+		c. Added " fVtxZ " under EventTree
+			c-1. for data, fVtxZ = AliVVertex->GetZ()
+			c-2. for MC, fVtxZ = AliAODMCHeader->GetVtxZ()
+
+	2. Updated fWeightFit to get the parameters via functions
+
+//-----------------------------------------------
+
 Updates at Aug. 28 (kimc):
 
 	1. Added high multiplicity triggers feature

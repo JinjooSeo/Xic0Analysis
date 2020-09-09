@@ -1,3 +1,7 @@
+//Include below libraries if you use ROOT6
+//#include "AliAnalysisTaskSEXic0Semileptonic.h"
+//#include "AliAnalysisAlien.h"
+
 void ReadRunInfo(const char* listPath, const char* taskOpt, string& datPath, string& datPatt, vector<int>& vecRuns)
 {
 	datPath = "";
@@ -31,6 +35,7 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
 {
 	enum {local, test, full, terminate, collect}; //Modes (argument)
 
+	const char* aliPhysV = "vAN-20200322-1";
 	const char* taskName = "Xi0cSemiL";
 	const char* taskAdd  = "Xi0c_add.C";
 	const char* taskSrc  = "AliAnalysisTaskSEXic0Semileptonic.cxx";
@@ -55,8 +60,10 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
     gROOT->ProcessLine(".include $ALICE_PHYSICS/include");
     gROOT->LoadMacro(Form("%s++g", taskSrc));
 
+	//ROOT5 style loading
 	//-------------------------------------------
 
+	#if 1
 	//Physics selection
 	if (taskOptStr.Contains("AOD"))
 	{
@@ -80,6 +87,34 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
 	TString taskNameStr = taskName;
 	AliAnalysisTaskSEXic0Semileptonic* task = Xi0c_add(taskNameStr, taskOptStr);
 	if (!task) { cout <<"Cannot find AliAnalysisTaskSEXic0Semileptonic!" <<endl; return; }
+	#endif
+
+	//ROOT6 style loading
+	//-------------------------------------------
+
+	#if 0
+    if (taskOptStr.Contains("AOD"))
+    {
+        const char* pathPhys = "$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C";
+        TMacro macPhys(gSystem->ExpandPathName(pathPhys));
+        macPhys.SetParams(Form("%i, %i", isMC, 1));
+        AliPhysicsSelectionTask *taskPhys = reinterpret_cast<AliPhysicsSelectionTask*>(macPhys.Exec());
+    }
+
+    const char* pathMult = "$ALICE_PHYSICS/OADB/COMMON/MULTIPLICITY/macros/AddTaskMultSelection.C";
+    TMacro macMult(gSystem->ExpandPathName(pathMult));
+    macMult.SetParams(Form("%i", true));
+    AliMultSelectionTask* taskMult = reinterpret_cast<AliMultSelectionTask*>(macMult.Exec());
+
+    const char* pathPid = "$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C";
+    TMacro macPid(gSystem->ExpandPathName(pathPid));
+    macPid.SetParams(Form("%i", isMC));
+    AliAnalysisTaskPIDResponse* taskPid = reinterpret_cast<AliAnalysisTaskPIDResponse*>(macPid.Exec());
+
+    TMacro macTask(gSystem->ExpandPathName(taskAdd));
+    macTask.SetParams(Form("\"%s\", \"%s\"", taskName, taskOpt));
+    AliAnalysisTaskSEXic0Semileptonic *task = reinterpret_cast<AliAnalysisTaskSEXic0Semileptonic*>(macTask.Exec());
+	#endif
 
 	//-------------------------------------------
 
@@ -106,7 +141,7 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
 		alien->SetAPIVersion("V1.1x");
         alien->SetAdditionalLibs(taskLib);
         alien->SetAnalysisSource(taskSrc);
-        alien->SetAliPhysicsVersion("vAN-20200322-1");
+        alien->SetAliPhysicsVersion(aliPhysV);
 
 		//Running
         alien->SetExecutable(Form("%s_%s.sh", taskName, taskOpt));
@@ -114,12 +149,12 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
         alien->SetInputFormat("xml-single"); //?
         alien->SetJDLName(Form("%s_%s.jdl", taskName, taskOpt));
         alien->SetMasterResubmitThreshold(90);
-		alien->SetNrunsPerMaster(6);
+		alien->SetNrunsPerMaster(10);
         alien->SetPrice(1); //?
         alien->SetSplitMaxInputFileNumber(60);
         alien->SetSplitMode("se"); //?
         alien->SetTTL(3600 * 12);
-		alien->SetUseSubmitPolicy(); //?
+		//alien->SetUseSubmitPolicy(); //? Jinjoo masked this out
 
 		//Output
 		alien->SetDefaultOutputs(false); //Enables all outputs of the tasks connected to the analysis manager
@@ -170,8 +205,6 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
 		cout <<Form("Starting analysis %s_%s...\n", taskName, taskOpt) <<endl;
 		mgr->SetGridHandler(alien);
 		mgr->StartAnalysis("grid");
-
-		delete alien; //Close connection to Grid
 	}//Grid
 
 	return;

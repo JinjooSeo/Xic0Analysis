@@ -294,9 +294,11 @@ void AliAnalysisTaskSEXic0Semileptonic::UserCreateOutputObjects()
 	auto hMCXic0Decays = fHistos->CreateTH1("hMCXic0Decays","",DecayChannel.size(), 0, DecayChannel.size());
 	for(auto i=0u; i<DecayChannel.size(); i++) hMCXic0Decays->GetXaxis()->SetBinLabel(i+1,DecayChannel.at(i).Data());
 
-	fWeightFit = new TF1("fWeightFit","expo",0,12);
-	fWeightFit -> SetParameter(0, 1.06549e-00);
-	fWeightFit -> SetParameter(1, -2.98456e-01);
+	fWeightFit = new TF1("fWeightFit","expo", 0, 12);
+	fWeightFit -> SetParameter(0, GetFitParameter1());//+1.06549e-00);
+	fWeightFit -> SetParameter(1, GetFitParameter2());//-2.98456e-01);
+	cout <<Form("\nFit parameters being set: %4.3f, %4.3f \n\n",
+				fWeightFit->GetParameter(0), fWeightFit->GetParameter(1)); //kimc
 
 	//---------------------------CUT STUDY (MC Xi from Xic0)---------------------------//
 
@@ -489,11 +491,13 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	fHistos->FillTH1("hEventNumbers", "PSpileup", 1);
 
 	//Primary Vertex Selection
+	fVtxZ = 9999; //kimc
 	const AliVVertex* Vtx = fEvt->GetPrimaryVertex();
 	if (!Vtx || Vtx->GetNContributors() < 1) return;
 	fHistos->FillTH1("hEventNumbers", "Goodz", 1);
 	if (!(fabs(Vtx->GetZ())<10.)) return;
 	fHistos->FillTH1("hEventNumbers", "Goodzcut", 1);
+	fVtxZ = Vtx->GetZ(); //kimc
 
 	if (IsHighMul)
 	{
@@ -519,6 +523,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 		AliAODMCHeader *mcHeader = (AliAODMCHeader*)fEvt->GetList()->FindObject(AliAODMCHeader::StdBranchName());
 		Double_t zMCVertex = mcHeader->GetVtxZ();
 		if (!(fabs(zMCVertex)<10.)) return;
+		fVtxZ = zMCVertex; //kimc
 
 		for (Int_t iTracks=0; iTracks<(fMC->GetNumberOfTracks()); iTracks++)
 		{
@@ -540,6 +545,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 		Bool_t DrawElectron = FilterElectron(trk,mass,mass_ss,0,0,100);
 	}
 
+	fNeXiPair = 0; //kimc!
 	auto nCascs = fEvt->GetNumberOfCascades();
 	for (int icasc=0; icasc<nCascs; icasc++)
 	{
@@ -561,23 +567,25 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 			//if(IsMC) CheckXic0Info(trk,casc);
 			if (!(FilterTrack(trk,1))) continue;  //track cut
 			FillPairEleXi(casc, trk);
+
+			//*****************************************************
+
+			//Fill event tree, rearranged variables' order by kimc - updated at Sep. 2
+			for (int a=0; a<5; a++) fEventTreeVariable[a] = -999; //Reset
+			fEventTreeVariable[0] = fRunNumber;
+			fEventTreeVariable[1] = fCentrality;
+			fEventTreeVariable[2] = fCentralSPD;
+			fEventTreeVariable[3] = (Float_t)fNSPDTracklets;
+			fEventTreeVariable[4] = (Float_t)fNeXiPair;
+			fEventTreeVariable[4] = (Float_t)fVtxZ;
+
+			fEventTreeVarTrig = 0; //Reset
+			fEventTreeVarTrig = inputHandler->IsEventSelected();
+			//fEventTree->Fill(); //Move this inside FillPairEleXi, to sync entries
+
+			//*****************************************************
 		}
 	}
-
-	//*****************************************************
-
-	//Fill event tree, rearranged variables' order by kimc
-	for (int a=0; a<4; a++) fEventTreeVariable[a] = -999; //Reset
-	fEventTreeVariable[0] = fRunNumber;
-	fEventTreeVariable[1] = fCentrality;
-	fEventTreeVariable[2] = fCentralSPD;
-	fEventTreeVariable[3] = (Float_t)fNSPDTracklets;
-
-	fEventTreeVarTrig = 0; //Reset
-	fEventTreeVarTrig = inputHandler->IsEventSelected();
-	fEventTree->Fill();
-
-	//*****************************************************
 
 	PostData(1, fHistos->GetListOfHistograms());
 	PostData(2, fTrackCuts);
@@ -1276,7 +1284,13 @@ void AliAnalysisTaskSEXic0Semileptonic::FillPairEleXi(AliAODcascade *casc, AliAO
 		fPaireXiTreeVariable[35] = cosoa;
 		fPaireXiTreeVariable[36] = In_Mass;
 		fPaireXiTreeVariable[37] = Pt;
-		if (!IsMC) fPaireXiTree->Fill();
+		if (!IsMC)
+		{
+			fPaireXiTree->Fill();
+
+			fNeXiPair++; //kimc
+			fEventTree->Fill(); //kimc
+		}
 
 		if (IsMC)
 		{
@@ -1356,6 +1370,9 @@ void AliAnalysisTaskSEXic0Semileptonic::FillPairEleXi(AliAODcascade *casc, AliAO
 			}//Xic0
 			fPaireXiTree->Fill();
 			fMCTree->Fill();
+
+			fNeXiPair++; //kimc
+			fEventTree->Fill(); //kimc
 		}//IsMC
 
 		if (cosoa>0 && echarge*vcharge<0 && StandardCutFlag(trk,casc,1,1,1,1))
@@ -1923,7 +1940,7 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineEventTree()
 
 	fEventTree = new TTree("EventTree", "EventTree");
 
-	const Int_t nVar = 4;
+	const Int_t nVar = 6;
 	fEventTreeVariable = new Float_t[nVar];
 	TString * fTreeVariableNames = new TString[nVar];
 
@@ -1931,6 +1948,8 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineEventTree()
 	fTreeVariableNames[1] = "fCentrality"; //Centrality, by V0M
 	fTreeVariableNames[2] = "fCentralSPD"; //Centrality, by SPD
 	fTreeVariableNames[3] = "fNSPDTracklets"; //# of SPD tracklets
+	fTreeVariableNames[4] = "fNeXiPair";      //# of saved pairs for the event: NOT 0 if more than pair saved
+	fTreeVariableNames[5] = "fVtxZ";
 
 	for (Int_t iVar=0; iVar<nVar; iVar++)
 	{

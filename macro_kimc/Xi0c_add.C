@@ -16,6 +16,10 @@ AliAnalysisTaskSEXic0Semileptonic* Xi0c_add(
 	task->SetMC((taskOpt.Contains("MC"))?true:false);
 	cout <<Form("\nSet input type: %s\n", (taskOpt.Contains("MC"))?"MC":"DATA") <<endl;
 
+	//Set weighting parameters
+	task->SetFitParameter1(+1.97848e-00);
+	task->SetFitParameter2(-3.68931e-01);
+
 	//Add triggers
 	task->UseTrig_kINT7();
 	task->UseTrig_kHMV0();
