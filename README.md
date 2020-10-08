@@ -4,6 +4,19 @@ macros are not ready yet (need to confirm)
 
 //-----------------------------------------------
 
+Updates at Oct. 8 (kimc)
+
+	1. AliAnalysisTaskSEXi0c... is updated by Dr. Bok for compatability with pPb dataset
+		a. pp: Get multiplicity from V0M
+		b. PPb: Get multiplicity from V0A
+	2. Macro for LEGO train running: AddTaskXic0Semileptonic.C
+		a. Added High multiplicity trigger option (bool UseTrifHM)
+			a-1. By default it is disabled: only kINY7 will be used
+			a-2. Add kHMV0 and kHMSPD triggers f enabled
+		b. Tested at Grid: no problem
+
+//-----------------------------------------------
+
 Updates at Sep. 9 (kimc)
 
 	1. Enforced EventTree sync to eXiTree

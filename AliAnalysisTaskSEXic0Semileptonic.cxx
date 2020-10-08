@@ -230,8 +230,8 @@ void AliAnalysisTaskSEXic0Semileptonic::UserCreateOutputObjects()
 	//fHistos->CreateTH1("NumOfe","",5000,0,5000,"s");
 	//fHistos->CreateTH1("NumOfXi","",5000,0,5000,"s");
 	fHistos->CreateTH1("NumOfEvtperRun","", (295000-252000),252000,295000,"s"); //kimc
-	fHistos->CreateTH1("NumOfe","", (295000-252000),252000,295000,"s"); //kimc
-	fHistos->CreateTH1("NumOfXi","", (295000-252000),252000,295000,"s"); //kimc
+	fHistos->CreateTH1("NumOfe","",         (295000-252000),252000,295000,"s"); //kimc
+	fHistos->CreateTH1("NumOfXi","",        (295000-252000),252000,295000,"s"); //kimc
 
 	fHistos->CreateTH1("hNonPromptXicRap","",500,-5,5,"s");
 	fHistos->CreateTH1("hPromptXicRap","",500,-5,5,"s");
@@ -416,8 +416,9 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	}
 	else
 	{
+		if(IsPA){fCentrality = MultSelection->GetMultiplicityPercentile("V0A");}
+		else{fCentrality = MultSelection->GetMultiplicityPercentile("V0M");}
 		//kimc: should it be changed for HM triggers?
-		fCentrality = MultSelection->GetMultiplicityPercentile("V0M");
 		fCentralSPD = MultSelection->GetMultiplicityPercentile("SPDTracklets");
 		fNSPDTracklets = MultSelection->GetEstimator("SPDTracklets")->GetValue();
 
@@ -571,13 +572,13 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 			//*****************************************************
 
 			//Fill event tree, rearranged variables' order by kimc - updated at Sep. 2
-			for (int a=0; a<5; a++) fEventTreeVariable[a] = -999; //Reset
+			for (int a=0; a<6; a++) fEventTreeVariable[a] = -999; //Reset
 			fEventTreeVariable[0] = fRunNumber;
 			fEventTreeVariable[1] = fCentrality;
 			fEventTreeVariable[2] = fCentralSPD;
 			fEventTreeVariable[3] = (Float_t)fNSPDTracklets;
 			fEventTreeVariable[4] = (Float_t)fNeXiPair;
-			fEventTreeVariable[4] = (Float_t)fVtxZ;
+			fEventTreeVariable[5] = (Float_t)fVtxZ;
 
 			fEventTreeVarTrig = 0; //Reset
 			fEventTreeVarTrig = inputHandler->IsEventSelected();

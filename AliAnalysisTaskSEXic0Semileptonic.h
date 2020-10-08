@@ -39,9 +39,9 @@ class AliAnalysisTaskSEXic0RunTable
 		AliAnalysisTaskSEXic0RunTable(Int_t runnumber);
 		~AliAnalysisTaskSEXic0RunTable();
 
-		Bool_t IsPP() { return fCollisionType==kPP; };
-		Bool_t IsPA() { return fCollisionType==kPA; };
-		Bool_t IsAA() { return fCollisionType==kAA; };
+		//Bool_t IsPP() { return fCollisionType==kPP; };
+		//Bool_t IsPA() { return fCollisionType==kPA; };
+		//Bool_t IsAA() { return fCollisionType==kAA; };
 
 	private:
 
@@ -66,6 +66,7 @@ class AliAnalysisTaskSEXic0Semileptonic : public AliAnalysisTaskSE
 		virtual void Terminate(Option_t *);
 
 		void SetMC(Bool_t ismc) { IsMC = ismc; };
+		void SetPA(Bool_t ispa) { IsPA = ispa; };
 		void SetRunOffset(Int_t RunOffset) { fRunOffset = RunOffset; };
 		void SetHighMultiplicity(Bool_t IsHM) { IsHighMul = IsHM; };
 		Int_t GetRunOffset() { return fRunOffset; };
@@ -124,6 +125,7 @@ class AliAnalysisTaskSEXic0Semileptonic : public AliAnalysisTaskSE
 		TString fOption; //!
 		Bool_t  IsMC = kTRUE;
 		Bool_t  IsHighMul = kFALSE; //high multiplicity condition
+		Bool_t  IsPA = kFALSE; // to use V0A for pPb
 
 		TList        *fOutput = nullptr; //!
 		THistManager *fHistos = nullptr; //!
