@@ -1,6 +1,18 @@
 # Xic0Analysis
 Xic0 analysis code
-macros are not ready yet (need to confirm)
+
+//-----------------------------------------------
+
+Update at Dec. 18 (kimc)
+
+	- Added TH2 histograms (fired trigger vs. mult) for nomalization purpose for data
+		a. Histograms:
+			a-1. hNorm_multV0: uses V0M centrality (fCentrality)
+			a-2. hNorm_multSPD: uses SPD centrality (fCentrality)
+		b. Conditions:
+			b-1. Triggers: all (any trigger, 0), kINT7 (1), kHMV0 (2), kHMSPD (3), and 'kHMV0 || kHMSPD' (4)
+			b-2. 1,000 bins assigned for multiplicity axis (bin width 0.1)
+			b-3. Histograms are being filled after trigger check finished
 
 //-----------------------------------------------
 
