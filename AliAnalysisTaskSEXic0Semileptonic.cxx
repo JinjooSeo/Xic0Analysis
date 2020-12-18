@@ -492,6 +492,21 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	if (inputHandler->IsEventSelected() &AliVEvent::kHighMultV0)  fHistos->FillTH1("hEventNumbers", "HMV0", 1);
 	if (inputHandler->IsEventSelected() &AliVEvent::kHighMultSPD) fHistos->FillTH1("hEventNumbers", "HMSPD", 1);
 
+	//*****************************************************
+
+	//Reject pile-up events
+	if (!IsMC && fEvt->IsPileupFromSPD(3.,0.8,3.,2.,5.)) return;
+	fHistos->FillTH1("hEventNumbers", "PSpileup", 1);
+
+	//Primary Vertex Selection
+	fVtxZ = 9999; //kimc
+	const AliVVertex* Vtx = fEvt->GetPrimaryVertex();
+	if (!Vtx || Vtx->GetNContributors() < 1) return;
+	fHistos->FillTH1("hEventNumbers", "Goodz", 1);
+	if (!(fabs(Vtx->GetZ())<10.)) return;
+	fHistos->FillTH1("hEventNumbers", "Goodzcut", 1);
+	fVtxZ = Vtx->GetZ(); //kimc
+
     //kimc, updated at Dec. 18 (2020)
     if (IsMC == false)
     {
@@ -513,27 +528,12 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
             fHistos->FillTH2("hNorm_multSPD", fCentralSPD, 3);
         }
         if ( (inputHandler->IsEventSelected() & AliVEvent::kHighMultV0) ||
-                (inputHandler->IsEventSelected() & AliVEvent::kHighMultSPD) )
+			 (inputHandler->IsEventSelected() & AliVEvent::kHighMultSPD) )
         {
             fHistos->FillTH2("hNorm_multV0",  fCentrality, 4);
             fHistos->FillTH2("hNorm_multSPD", fCentralSPD, 4);
         }
     }
-
-	//*****************************************************
-
-	//Reject pile-up events
-	if (!IsMC && fEvt->IsPileupFromSPD(3.,0.8,3.,2.,5.)) return;
-	fHistos->FillTH1("hEventNumbers", "PSpileup", 1);
-
-	//Primary Vertex Selection
-	fVtxZ = 9999; //kimc
-	const AliVVertex* Vtx = fEvt->GetPrimaryVertex();
-	if (!Vtx || Vtx->GetNContributors() < 1) return;
-	fHistos->FillTH1("hEventNumbers", "Goodz", 1);
-	if (!(fabs(Vtx->GetZ())<10.)) return;
-	fHistos->FillTH1("hEventNumbers", "Goodzcut", 1);
-	fVtxZ = Vtx->GetZ(); //kimc
 
 	if (IsHighMul)
 	{

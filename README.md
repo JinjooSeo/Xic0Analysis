@@ -14,6 +14,8 @@ Update at Dec. 18 (kimc)
 			b-2. 1,000 bins assigned for multiplicity axis (bin width 0.1)
 			b-3. Histograms are being filled after trigger check finished
 
+		* 2nd update: histogram fillup moment changed (before: trigger only -> now: trigger + zVtx + PV)
+
 //-----------------------------------------------
 
 Updates at Oct. 8 (kimc)
