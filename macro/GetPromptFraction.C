@@ -64,8 +64,8 @@ TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t Get
   fFitFunctionMax->SetParameter(0,fFitFunction->GetParameter(0)*2.0);
   fFitFunctionMax->SetParameter(1,fFitFunction->GetParameter(1)*2.0);
   TF1 *fFitFunctionMin = new TF1("RatioFitMin","pol1",1,12); // for systematic
-  fFitFunctionMin->SetParameter(0,fFitFunction->GetParameter(0)*0.5);
-  fFitFunctionMin->SetParameter(1,fFitFunction->GetParameter(1)*0.5);
+  fFitFunctionMin->SetParameter(0,fFitFunction->GetParameter(0)*0.05);
+  fFitFunctionMin->SetParameter(1,fFitFunction->GetParameter(1)*0.05);
 
 
   //3) Feeddown Xic spectrum--------------------------------------------------------------
