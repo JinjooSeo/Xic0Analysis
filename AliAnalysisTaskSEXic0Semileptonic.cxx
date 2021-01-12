@@ -57,7 +57,6 @@
 #include "AliESDtrackCuts.h"
 #include "AliESDtrack.h"
 #include "AliAODInputHandler.h"
-#include "AliAnalysisTaskSEHFTreeCreator.h"
 #include "AliMultSelection.h"
 
 const Double_t pi = TMath::Pi();
@@ -1376,8 +1375,8 @@ void AliAnalysisTaskSEXic0Semileptonic::FillPairEleXi(AliAODcascade *casc, AliAO
 					fMCTreeVariable[ 4] = mcXic0->Pt();
 					fMCTreeVariable[ 5] = mcPt;
 
-					if(In_Mass<=2.5 && cosoa>0 && StandardCutFlag(trk,casc,1,1,1,1))
-					{
+					//if(In_Mass<=2.5 && cosoa>0 && StandardCutFlag(trk,casc,1,1,1,1))
+					//{
 						fHistos->FillTH2("hXic0vseXiRPM",mcXic0_Pt,eXi);
 						//fHistos->FillTH2("hXic0vseXiRPM_2",mcXic0_Pt,eXi);
 						fHistos->FillTH1("hGenXic0Pt",mcXic0_Pt); //MC Pt of Xic0
@@ -1399,9 +1398,9 @@ void AliAnalysisTaskSEXic0Semileptonic::FillPairEleXi(AliAODcascade *casc, AliAO
 							c_flag = 1;
 						}
 						
-						fMCTreeVariable[ 6] = c_flag;
-						fMCTreeVariable[ 7] = b_flag;
-					}//fill histo
+						fMCTreeVariable[ 7] = c_flag;
+						fMCTreeVariable[ 8] = b_flag;
+					//}//fill histo
 				}//e_flag && Xi_flag
 			}//Xic0
 			fPaireXiTree->Fill();
