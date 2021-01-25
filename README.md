@@ -3,6 +3,14 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+Update at Jan.25, 2021 (kimc)
+
+	- Added 2nd production macro (Xic0AnaMakeRoot.C) for analysis
+		a. A few modifications compared to original, especially adding > 0 on several denominators
+		b. Tested on Lego train output available at Jan. 25
+
+//-----------------------------------------------
+
 Update at Dec. 18 (kimc)
 
 	- Added TH2 histograms (fired trigger vs. mult) for nomalization purpose for data
