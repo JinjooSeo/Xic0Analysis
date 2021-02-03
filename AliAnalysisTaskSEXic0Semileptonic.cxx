@@ -87,8 +87,7 @@ AliAnalysisTaskSEXic0Semileptonic::AliAnalysisTaskSEXic0Semileptonic() :
 	DefineOutput(4, TTree::Class());
 	DefineOutput(5, TTree::Class());
 	DefineOutput(6, TTree::Class());
-	DefineOutput(7, TTree::Class());
-	DefineOutput(8, AliNormalizationCounter::Class());
+	DefineOutput(7, AliNormalizationCounter::Class());
 
 	fMCXicTreeVariable = 0;
 	fPaireXiTreeVariable = 0;
@@ -112,8 +111,7 @@ AliAnalysisTaskSEXic0Semileptonic::AliAnalysisTaskSEXic0Semileptonic(const char 
     DefineOutput(4, TTree::Class());
     DefineOutput(5, TTree::Class());
     DefineOutput(6, TTree::Class());
-		DefineOutput(7, TTree::Class());
-    DefineOutput(8, AliNormalizationCounter::Class());
+    DefineOutput(7, AliNormalizationCounter::Class());
 
     fMCXicTreeVariable = 0;
     fPaireXiTreeVariable = 0;
@@ -353,7 +351,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserCreateOutputObjects()
 	PostData(1, fHistos);
 	PostData(2, fTrackCuts);
 
-	DefineMCCutTree();
+	DefineMCXicTree();
 	PostData(3, fMCXicTree);
 
 	DefinePaireXiTree();
@@ -1024,10 +1022,10 @@ void AliAnalysisTaskSEXic0Semileptonic::FillMCXic0(AliAODMCParticle *mcpart)
 		fMCXicTreeVariable[1] = MCe->Pt();
 		fMCXicTreeVariable[2] = MCcasc->Pt();
 		fMCXicTreeVariable[3] = mcpart->Y();
-		fMCXicTreeVariable[4] = MCe->Y()
-		fMCXicTreeVariable[5] = MCcasc->Y()
-		fMCXicTreeVariable[6] = c_flag
-		fMCXicTreeVariable[7] = b_flag
+		fMCXicTreeVariable[4] = MCe->Y();
+		fMCXicTreeVariable[5] = MCcasc->Y();
+		fMCXicTreeVariable[6] = c_flag;
+		fMCXicTreeVariable[7] = b_flag;
 		fMCXicTree->Fill();
 
 		if (fabs(mcpart->Y())<0.5)
