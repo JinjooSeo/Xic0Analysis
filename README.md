@@ -3,6 +3,15 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+Update at Fed.10, 2021 (kimc)
+
+	- Added analysis macros for final cross section estimation
+		a. Xi0cAnaMakeRoot.C (updated Xi topology cut after WDK)
+		b. Xi0cAnaFunction.C (collection of xSec analysis subroutines)
+		c. Xi0cAnaExecute.C (steering macro)
+
+//-----------------------------------------------
+
 Update at Jan.25, 2021 (kimc)
 
 	- Added 2nd production macro (Xic0AnaMakeRoot.C) for analysis
