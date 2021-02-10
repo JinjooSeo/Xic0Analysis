@@ -37,41 +37,47 @@ void XiMassvsPt(TFile* F, const char* SDIR); //Xi mass distribution for various 
 void XiCutDistribution(TFile *F, const char* SDIR); //look Xi cut value distribution from prompt an feeddown Xic0
 void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double* MultPerc, double* WFitPar);
 
-//----------------------------------------------------------------------------------
-void Xi0cAnaMakeRoot(const char* inFile = "AnalysisResults.root", bool IsMC = false)
+//----------------------------------------------------------------
+void Xi0cAnaMakeRoot(TString inFile = "AnalysisResults_data.root")
 {
-    double MultPerc[2] = {  0, 100}; //Multiplicity percentile
-    double WFitPar[2]  = {1.0, 1.0}; //{+1.97848e-00, -3.68931e-01}; //Weight fit parameters
+	//Setup
+	const char* TRIG = "MB"; //MB, HMV0, HMSPD, or HMOR
+	double MultPerc[2] = {0.0, 100}; //Multiplicity percentile
+	double WFitPar[2]  = {1.0, 1.0}; //{+1.97848e-00, -3.68931e-01}; //Weight fit parameters, only to MC
 
-    const char* TRIG = "MB"; //MB, HMV0, HMSPD, or HMOR
-	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file, !
+	//+++++++++++++++++++++++++++++++++++++++++++
 
-    const char* PERC = Form("%ito%i", (int)MultPerc[0], (int)MultPerc[1]);
-    const char* TYPE = (IsMC)?"MC":"data";
-	if (IsMC) TYPE = Form("%s%s", TYPE, (fabs(WFitPar[0]-1.0)<1.e-5 && fabs(WFitPar[1]-1.0)<1.e-5)?"raw":"wgt");
+	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file
+	const char* PERC = Form("%2.1fto%2.1f", MultPerc[0], MultPerc[1]);
+
+	if ( !inFile.Contains("data") && !inFile.Contains("MC") ) { cout <<"File type?\n"; return; }
+	bool IsMC = inFile.Contains("MC")?true:false;
+	const char* TYPE = (IsMC==false)?"data":"MC";
+	if (IsMC && fabs(WFitPar[0]-1.0) > 1.e-5) TYPE = Form("%swgt", TYPE);
+	if (IsMC && fabs(WFitPar[0]-1.0) < 1.e-5) TYPE = Form("%sraw", TYPE);
 
 	cout <<"\nGenerating ROOT file in following setup:" <<endl;
 	cout <<Form("- Type: %s", TYPE) <<endl;
 	cout <<Form("- Trigger: %s", TRIG) <<endl;
-	cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f]", MultPerc[0], MultPerc[1]) <<endl;
-	cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPar[0], WFitPar[1]) <<endl;
+	if (!IsMC) cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]) <<endl;
+	else       cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPar[0], WFitPar[1]) <<endl;
 
-	//+++++++++++++++++++++++++++++++++
+	//+++++++++++++++++++++++++++++++++++++++++++
 
-    TFile* F = TFile::Open(inFile);
-    if (!F || F->IsZombie()) { cout <<Form("Cannot open %s!\n", inFile); return; }
-    TFile* G = new TFile(Form("out_%s_%s_%s.root", TYPE, TRIG, PERC), "recreate");
+	TFile* F = TFile::Open(inFile);
+	if (!F || F->IsZombie()) { cout <<Form("Cannot open %s!\n", (const char*)inFile); return; }
+	TFile* G = new TFile(Form("out_%s_%s_%s.root", TYPE, TRIG, PERC), "recreate");
 
-    //nSigmaPlot(F, SDIR);
-    //XiMassvsPt(F, SDIR);
-    //XiCutDistribution(F, SDIR);
-    eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPar);
+	//nSigmaPlot(F, SDIR);
+	//XiMassvsPt(F, SDIR);
+	//XiCutDistribution(F, SDIR);
+	eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPar);
 
-    G->Write();
-    G->Close();
-    F->Close();
+	G->Write();
+	G->Close();
+	F->Close();
 
-    return;
+	return;
 }//Main
 
 //------------------------------------------------------------------
@@ -193,14 +199,44 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 	Double_t binning2[] = {1.,2.,3.,4.,5.,6.,8.,12.,16.,20}; //10
 	Double_t binning3[] = {1.,2.,3.,4.,5.,6.,8.,12.};        //8
 
-	//Link tree
+	//Cut (updated Feb. 4, 2021)
+	//*******************************************
+
+	enum {VL, L, S, T, VT};	const int nCutLv = 5;
+
+	//Old cuts (Before Feb. 2021)
+	//const float CutXiTop_V0DecayL[nCutLv]    = {0.02, 1.55,   2.67,   3.6,    4.39};
+	//const float CutXiTop_CascDecayL[nCutLv]  = {0.02, 0.29,   0.38,   0.53,   0.72};
+	//const float CutXiTop_DCABachToPV[nCutLv] = {0.01, 0.0146, 0.0204, 0.037,  0.037};
+	//const float CutXiTop_DCAV0ToPV[nCutLv]   = {0.01, 0.02,   0.03,   0.04,   0.06};
+	const float CutXiTop_V0DecayL[nCutLv]    = {1.10, 1.55, 2.67, 3.60, 4.39};
+	const float CutXiTop_CascDecayL[nCutLv]  = {0.50, 0.50, 0.50, 0.53, 0.72};
+	const float CutXiTop_DCABachToPV[nCutLv] = {0.05, 0.05, 0.05, 0.05, 0.10};
+	const float CutXiTop_DCAV0ToPV[nCutLv]   = {0.05, 0.05, 0.05, 0.10, 0.15};
+
+	const float CutXiTop_DCANegToPV[nCutLv]  = {0.05, 0.061, 0.073, 0.088,  0.102};
+	const float CutXiTop_DCAPosToPV[nCutLv]  = {0.05, 0.061, 0.073, 0.088,  0.102};
+	const float CutXiTop_V0CosPA[nCutLv]     = {0.98, 0.981, 0.983, 0.9839, 0.985};
+	const float CutXiTop_XiCosPA[nCutLv]     = {0.98, 0.981, 0.983, 0.9839, 0.985};
+
+	const int CutXiReco_pionXratioN[nCutLv]   = {65, 65, 70, 75, 80};
+	const int CutXiReco_protonXratioN[nCutLv] = {65, 65, 70, 75, 80};
+	const int CutXiReco_bpionXratioN[nCutLv]  = {65, 65, 70, 75, 80};
+	const float CutXiReco_pionXratioNorm[nCutLv]   = {0.70, 0.75, 0.77, 0.79, 0.81};
+	const float CutXiReco_protonXratioNorm[nCutLv] = {0.70, 0.75, 0.77, 0.79, 0.81};
+	const float CutXiReco_bpionXratioNorm[nCutLv]  = {0.70, 0.75, 0.77, 0.79, 0.81};
+
+	const int CutEReco_ITSClu[nCutLv]    = {3, 3, 3, 3, 3};
+	const int CutEReco_TPCPIDClu[nCutLv] = {40, 45, 50, 55, 60};
+	const int CutEReco_eXratioN[nCutLv]  = {65, 65, 70, 75, 85};
+	const float CutEReco_eXratioNorm[nCutLv] = {0.75, 0.8, 0.8, 0.85, 0.9};
+
+	//Link input
 	//*******************************************
     
-	//!
 	//Histograms container
 	TObject* hist = F->Get(Form("%s/histogram", SDIR));
 
-	//!
     //EventTree
     TTree* EventTree = (TTree*)F->Get(Form("%s/EventTree", SDIR));
 	if (!EventTree) { cout <<"Cannot link the EventTree!" <<endl; return; }
@@ -214,7 +250,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
     EventTree->SetBranchAddress("fVtxZ",          &fZvtx);
     EventTree->SetBranchAddress("fTrigBit",       &fTrigBit);
 
-    TTree* Pair = (TTree*)F->Get(Form("%s/eXiTree", SDIR)); //!
+    TTree* Pair = (TTree*)F->Get(Form("%s/eXiTree", SDIR));
 	if (!Pair) { cout <<"Cannot link the eXiTree!" <<endl; return; }
 	Float_t pTe, echarge, pTv, vcharge, Massv;
 	Float_t cosoa, In_Mass, Pt, nSigmaTOF, nSigmaTPC;
@@ -265,7 +301,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
     Pair->SetBranchAddress("In_Mass", &In_Mass);
     Pair->SetBranchAddress("eXiPt", &Pt);
 
-	//!
     TTree* MCTree = (TTree*)F->Get(Form("%s/MCTree", SDIR));
 	if (!MCTree) { cout <<"Cannot link the MCTree!" <<endl; return; }
 	Float_t mcpTe, mcecharge, mcpTv, mcvcharge, mcpteXi, mcptXic0, mcc_flag, mcb_flag, mcXib, XibeXi, mcXibMass;
@@ -717,18 +752,16 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
     TH1F* htest4 = new TH1F("invariant mass","",30,1,6); htest4->Sumw2();
     TH1F* htest5 = new TH1F("opening angle","",30,-1,1); htest5->Sumw2();
 
-	#if 1
 	//Loop over tracks
 	//*****************************************************
 
-	//!
+	#if 1
 	const Int_t nTracks = Pair->GetEntriesFast();
 	const Int_t nEvents = EventTree->GetEntriesFast();
 	if (nEvents != nTracks) { cout <<"EventTree and eXiTree does NOT match! Stop.\n"; return; }
 
 	for (Int_t i=0; i<nTracks; i++)
 	{
-		//!
 		//Eventwise cut, kimc
 		//+++++++++++++++++++++++++++++++++++++++
 
@@ -737,7 +770,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		//Sanity check by run number
 		if ( (fRunNumber < 252000) || (fRunNumber > 295000) )
 		{
-			cout <<Form("Invalid RunNumber %f detected in track %i: skip.", fRunNumber, i) <<endl;
+			//cout <<Form("Invalid RunNumber %f detected in track %i: skip.", fRunNumber, i) <<endl;
 			continue;
 		}
 
@@ -752,22 +785,13 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		}
 		if (IsMC==false && TrigFired==false) continue; 
 
-		//Multiplicity percentile
-		Float_t tempMP = 0;
-		if      ( !strcmp(TRIG, "MB")    ) tempMP = fCentrality;
-		else if ( !strcmp(TRIG, "HMV0")  ) tempMP = fCentrality;
-		else if ( !strcmp(TRIG, "HMSPD") ) tempMP = fCentralSPD;
-		else if ( !strcmp(TRIG, "HMOR")  )
-		{
-			if ( (fTrigBit & TrigHMV0) && (fTrigBit & TrigHMSPD) ) tempMP = fCentralSPD;
-			else if ( fTrigBit & TrigHMSPD ) tempMP = fCentralSPD;
-			else if ( fTrigBit & TrigHMV0 ) tempMP = fCentrality;
-		}
-		if ( (tempMP < MultPerc[0]) || (tempMP > MultPerc[1]) ) continue;
+		//Multiplicity percentile, apply only to the data
+		const Float_t tempMP = fCentrality;
+		if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
 
 		//eXi pair - flags
 		//+++++++++++++++++++++++++++++++++++++++
-
+		
 		Pair->GetEntry(i);
 
 		if (fabs(Massv - 1.32171) > 0.008) continue; //Xi mass tolerance
@@ -776,9 +800,9 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 
 		//Bool_t isparticle = (vcharge>0)?kFALSE:kTRUE; //kimc: what's the purpose? Masking it
 		Float_t VL_e_nsigma_cut = -4.3 + (1.17*pTe) - (0.094*pTe*pTe);
-		Float_t  L_e_nsigma_cut = -4.1 + (1.17*pTe) - (0.094*pTe*pTe); ///need to modify
+		Float_t  L_e_nsigma_cut = -4.1 + (1.17*pTe) - (0.094*pTe*pTe); 
 		Float_t  S_e_nsigma_cut = -3.9 + (1.17*pTe) - (0.094*pTe*pTe);
-		Float_t  T_e_nsigma_cut = -3.7 + (1.17*pTe) - (0.094*pTe*pTe); ///need to modify
+		Float_t  T_e_nsigma_cut = -3.7 + (1.17*pTe) - (0.094*pTe*pTe); 
 		Float_t VT_e_nsigma_cut = -3.5 + (1.15*pTe) - (0.09 *pTe*pTe);
 		if (pTe >= 5)
 		{
@@ -789,34 +813,118 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 			VT_e_nsigma_cut = -3.5 + (1.15*5) - (0.09 *25);
 		}
 
+		#if 1
+		//Xi topology cut
+		Bool_t Xi_Topology_VLoose_flag = kFALSE;
+		Bool_t Xi_Topology_Loose_flag  = kFALSE;
+		Bool_t Xi_Topology_Stand_flag  = kFALSE;
+		Bool_t Xi_Topology_Tight_flag  = kFALSE;
+		Bool_t Xi_Topology_VTight_flag = kFALSE;
+		for (int j=0; j<nCutLv; j++)
+		{
+			if ( (V0DecayLength            > CutXiTop_V0DecayL[j]) &&
+				 (CascDecayLength          > CutXiTop_CascDecayL[j]) &&
+				 (DCABachToPrimVertex      > CutXiTop_DCABachToPV[j]) &&
+				 (DCANegToPrimVertex       > CutXiTop_DCANegToPV[j]) &&
+				 (DCAPosToPrimVertex       > CutXiTop_DCAPosToPV[j]) &&
+				 (V0CosineOfPoiningAngleXi > CutXiTop_V0CosPA[j]) &&
+				 (XiCosineOfPoiningAngle   > CutXiTop_XiCosPA[j]) &&
+				 (DCAV0ToPrimVertex        > CutXiTop_DCAV0ToPV[j]) )
+			{
+				if      (j == VL) Xi_Topology_VLoose_flag = kTRUE;
+			    else if (j ==  L) Xi_Topology_Loose_flag  = kTRUE;
+				else if (j ==  S) Xi_Topology_Stand_flag  = kTRUE;
+				else if (j ==  T) Xi_Topology_Tight_flag  = kTRUE;
+				else if (j == VT) Xi_Topology_VTight_flag = kTRUE;
+				else { cout <<"Invalid cut level at Xi topology! Stop.\n"; return; }
+			}
+		}
+
+		//Xi reconstruction cut
+		Bool_t Xi_Recon_VLoose_flag = kFALSE;
+		Bool_t Xi_Recon_Loose_flag  = kFALSE;
+		Bool_t Xi_Recon_Stand_flag  = kFALSE;
+		Bool_t Xi_Recon_Tight_flag  = kFALSE;
+		Bool_t Xi_Recon_VTight_flag = kFALSE;
+		for (int j=0; j<nCutLv; j++)
+		{
+			if (pion_findable>0 && proton_findable>0 && bpion_findable>0)
+			{
+				if ( (pion_crossedratio/pion_findable     > CutXiReco_pionXratioNorm[j]) &&
+					 (bpion_crossedratio/bpion_findable   > CutXiReco_bpionXratioNorm[j]) &&
+					 (proton_crossedratio/proton_findable > CutXiReco_protonXratioNorm[j]) &&
+					 (pion_crossedratio   > CutXiReco_pionXratioN[j]) &&
+					 (bpion_crossedratio  > CutXiReco_bpionXratioN[j]) &&
+					 (proton_crossedratio > CutXiReco_protonXratioN[j]) )
+				{
+					if      (j == VL) Xi_Recon_VLoose_flag = kTRUE;
+					else if (j ==  L) Xi_Recon_Loose_flag  = kTRUE;
+					else if (j ==  S) Xi_Recon_Stand_flag  = kTRUE;
+					else if (j ==  T) Xi_Recon_Tight_flag  = kTRUE;
+					else if (j == VT) Xi_Recon_VTight_flag = kTRUE;
+					else { cout <<"Invalid cut level at Xi reco! Stop.\n"; return; }
+				}
+			}
+		}
+
+		//Electron reco
+		Bool_t e_Recon_VLoose_flag = kFALSE;
+		Bool_t e_Recon_Loose_flag  = kFALSE;
+		Bool_t e_Recon_Stand_flag  = kFALSE;
+		Bool_t e_Recon_Tight_flag  = kFALSE;
+		Bool_t e_Recon_VTight_flag = kFALSE;
+		for (int j=0; j<nCutLv; j++)
+		{
+			if (e_findable > 0)
+			{
+				if ( (ITSCluster >= CutEReco_ITSClu[j]) &&
+					 (TPCPIDCluster > CutEReco_TPCPIDClu[j]) &&
+					 (e_crossedratio > CutEReco_eXratioN[j]) &&
+					 (e_crossedratio/e_findable > CutEReco_eXratioNorm[j]) )
+				{
+					if      (j == VL) e_Recon_VLoose_flag = kTRUE;
+					else if (j ==  L) e_Recon_Loose_flag  = kTRUE;
+					else if (j ==  S) e_Recon_Stand_flag  = kTRUE;
+					else if (j ==  T) e_Recon_Tight_flag  = kTRUE;
+					else if (j == VT) e_Recon_VTight_flag = kTRUE;
+					else { cout <<"Invalid cut level at e reco! Stop.\n"; return; }
+				}
+			}
+		}
+		#endif
+
+		#if 0
 		Bool_t Xi_Topology_VLoose_flag = kFALSE;
 		Bool_t Xi_Topology_Loose_flag = kFALSE;
 		Bool_t Xi_Topology_Stand_flag = kFALSE;
 		Bool_t Xi_Topology_Tight_flag = kFALSE;
 		Bool_t Xi_Topology_VTight_flag = kFALSE;
-		if ( V0DecayLength>0.02 && CascDecayLength>0.02 && DCABachToPrimVertex>0.01 && DCANegToPrimVertex>0.05 &&
-			 DCAPosToPrimVertex>0.05 && V0CosineOfPoiningAngleXi>0.98 && XiCosineOfPoiningAngle>0.98 &&
-			 DCAV0ToPrimVertex>0.01) Xi_Topology_VLoose_flag = kTRUE;
-		if ( V0DecayLength>1.55 && CascDecayLength>0.29 && DCABachToPrimVertex>0.0146 && DCANegToPrimVertex>0.061 &&
-			 DCAPosToPrimVertex>0.061 && V0CosineOfPoiningAngleXi>0.981 && XiCosineOfPoiningAngle>0.981 &&
-			 DCAV0ToPrimVertex>0.02 ) Xi_Topology_Loose_flag = kTRUE;
-		if ( V0DecayLength>2.67 && CascDecayLength>0.38 && DCABachToPrimVertex>0.0204 && DCANegToPrimVertex>0.073 &&
-			 DCAPosToPrimVertex>0.073 && V0CosineOfPoiningAngleXi>0.983 && XiCosineOfPoiningAngle>0.983 &&
-			 DCAV0ToPrimVertex>0.03 ) Xi_Topology_Stand_flag = kTRUE;
-		if ( V0DecayLength>3.6 && CascDecayLength>0.53 && DCABachToPrimVertex>0.037 && DCANegToPrimVertex>0.088 &&
-			 DCAPosToPrimVertex>0.088 && V0CosineOfPoiningAngleXi>0.9839 && XiCosineOfPoiningAngle>0.9839 &&
-			 DCAV0ToPrimVertex>0.04 ) Xi_Topology_Tight_flag = kTRUE;
-		if ( V0DecayLength>4.39 && CascDecayLength>0.72 && DCABachToPrimVertex>0.037 && DCANegToPrimVertex>0.102 &&
-			 DCAPosToPrimVertex>0.102 && V0CosineOfPoiningAngleXi>0.985 && XiCosineOfPoiningAngle>0.985 &&
-			 DCAV0ToPrimVertex>0.06) Xi_Topology_VTight_flag = kTRUE;
+		if ( V0DecayLength>0.02 && CascDecayLength>0.02 && DCABachToPrimVertex>0.01 &&
+			 DCANegToPrimVertex>0.05 && DCAPosToPrimVertex>0.05 && V0CosineOfPoiningAngleXi>0.98 &&
+			 XiCosineOfPoiningAngle>0.98 && DCAV0ToPrimVertex>0.01) Xi_Topology_VLoose_flag = kTRUE;
+		if ( V0DecayLength>1.55 && CascDecayLength>0.29 && DCABachToPrimVertex>0.0146 &&
+			 DCANegToPrimVertex>0.061 && DCAPosToPrimVertex>0.061 && V0CosineOfPoiningAngleXi>0.981 &&
+			 XiCosineOfPoiningAngle>0.981 && DCAV0ToPrimVertex>0.02 ) Xi_Topology_Loose_flag = kTRUE;
+		if ( V0DecayLength>2.67 && CascDecayLength>0.38 && DCABachToPrimVertex>0.0204 &&
+			 DCANegToPrimVertex>0.073 && DCAPosToPrimVertex>0.073 && V0CosineOfPoiningAngleXi>0.983 &&
+			 XiCosineOfPoiningAngle>0.983 && DCAV0ToPrimVertex>0.03 ) Xi_Topology_Stand_flag = kTRUE;
+		if ( V0DecayLength>3.6 && CascDecayLength>0.53 && DCABachToPrimVertex>0.037 &&
+			 DCANegToPrimVertex>0.088 && DCAPosToPrimVertex>0.088 && V0CosineOfPoiningAngleXi>0.9839 &&
+			 XiCosineOfPoiningAngle>0.9839 && DCAV0ToPrimVertex>0.04 ) Xi_Topology_Tight_flag = kTRUE;
+		if ( V0DecayLength>4.39 && CascDecayLength>0.72 && DCABachToPrimVertex>0.037 &&
+			 DCANegToPrimVertex>0.102 && DCAPosToPrimVertex>0.102 && V0CosineOfPoiningAngleXi>0.985 &&
+			 XiCosineOfPoiningAngle>0.985 && DCAV0ToPrimVertex>0.06) Xi_Topology_VTight_flag = kTRUE;
 
 		Bool_t Xi_Recon_VLoose_flag = kFALSE;
 		Bool_t Xi_Recon_Loose_flag = kFALSE;
 		Bool_t Xi_Recon_Stand_flag = kFALSE;
 		Bool_t Xi_Recon_Tight_flag = kFALSE;
 		Bool_t Xi_Recon_VTight_flag = kFALSE;
-		if ( pion_findable>0 && proton_findable>0 && bpion_findable>0) //Update: Require all denominators > 0, kimc
+		if (pion_findable>0 && proton_findable>0 && bpion_findable>0) //Update: Require all denominators > 0, kimc
 		{
+			if ( pion_crossedratio/pion_findable>0.70 && proton_crossedratio/proton_findable>0.70 &&
+				 bpion_crossedratio/bpion_findable>0.70 && pion_crossedratio>65 &&
+				 proton_crossedratio>65 && bpion_crossedratio>65 ) Xi_Recon_VLoose_flag = kTRUE;
 			if ( pion_crossedratio/pion_findable>0.75 && proton_crossedratio/proton_findable>0.75 &&
 				 bpion_crossedratio/bpion_findable>0.75 && pion_crossedratio>65 &&
 				 proton_crossedratio>65 && bpion_crossedratio>65 ) Xi_Recon_Loose_flag = kTRUE;
@@ -826,9 +934,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 			if ( pion_crossedratio/pion_findable>0.79 && proton_crossedratio/proton_findable>0.79 &&
 				 bpion_crossedratio/bpion_findable>0.79 && pion_crossedratio>75 &&
 				 proton_crossedratio>75 && bpion_crossedratio>75 ) Xi_Recon_Tight_flag = kTRUE;
-			if ( pion_crossedratio/pion_findable>0.70 && proton_crossedratio/proton_findable>0.70 &&
-				 bpion_crossedratio/bpion_findable>0.70 && pion_crossedratio>65 &&
-				 proton_crossedratio>65 && bpion_crossedratio>65 ) Xi_Recon_VLoose_flag = kTRUE;
 			if ( pion_crossedratio/pion_findable>0.81 && proton_crossedratio/proton_findable>0.81 &&
 				 bpion_crossedratio/bpion_findable>0.81 && pion_crossedratio>80 &&
 				 proton_crossedratio>80 && bpion_crossedratio>80 ) Xi_Recon_VTight_flag = kTRUE;
@@ -852,31 +957,33 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 			if ( e_crossedratio>85 && TPCPIDCluster>60 && e_crossedratio/e_findable>0.9 &&
 				 ITSCluster>=3) e_Recon_VTight_flag = kTRUE;
 		}
+		#endif
 
+		//Electron pID
 		Bool_t e_PID_VLoose_flag = kFALSE;
-		Bool_t e_PID_Loose_flag = kFALSE;
-		Bool_t e_PID_Stand_flag = kFALSE;
-		Bool_t e_PID_Tight_flag = kFALSE;
+		Bool_t e_PID_Loose_flag  = kFALSE;
+		Bool_t e_PID_Stand_flag  = kFALSE;
+		Bool_t e_PID_Tight_flag  = kFALSE;
 		Bool_t e_PID_VTight_flag = kFALSE;
 		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=VL_e_nsigma_cut && nSigmaTPC<=3) e_PID_VLoose_flag = kTRUE;
-		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=L_e_nsigma_cut && nSigmaTPC<=3) e_PID_Loose_flag = kTRUE;
-		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=S_e_nsigma_cut && nSigmaTPC<=3) e_PID_Stand_flag = kTRUE;
-		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=T_e_nsigma_cut && nSigmaTPC<=3) e_PID_Tight_flag = kTRUE;
+		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=L_e_nsigma_cut  && nSigmaTPC<=3) e_PID_Loose_flag  = kTRUE;
+		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=S_e_nsigma_cut  && nSigmaTPC<=3) e_PID_Stand_flag  = kTRUE;
+		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=T_e_nsigma_cut  && nSigmaTPC<=3) e_PID_Tight_flag  = kTRUE;
 		if (fabs(nSigmaTOF)<=2 && nSigmaTPC>=VT_e_nsigma_cut && nSigmaTPC<=3) e_PID_VTight_flag = kTRUE;
 
 		Bool_t OPAngle_Loose_flag = kFALSE;
 		Bool_t OPAngle_Stand_flag = kFALSE;
 		Bool_t OPAngle_Tight_flag = kFALSE;
-		if (cosoa>cos(110*(3.141592/180))) OPAngle_Loose_flag = kTRUE;
-		if (cosoa>cos( 90*(3.141592/180))) OPAngle_Stand_flag = kTRUE;
-		if (cosoa>cos( 70*(3.141592/180))) OPAngle_Tight_flag = kTRUE;
+		if (cosoa > cos(110*(3.141592/180))) OPAngle_Loose_flag = kTRUE;
+		if (cosoa > cos( 90*(3.141592/180))) OPAngle_Stand_flag = kTRUE;
+		if (cosoa > cos( 70*(3.141592/180))) OPAngle_Tight_flag = kTRUE;
 
 		Bool_t PairMass_Loose_flag = kFALSE;
 		Bool_t PairMass_Stand_flag = kFALSE;
 		Bool_t PairMass_Tight_flag = kFALSE;
-		if (In_Mass<2.7) PairMass_Loose_flag = kTRUE;
-		if (In_Mass<2.5) PairMass_Stand_flag = kTRUE;
-		if (In_Mass<2.3) PairMass_Tight_flag = kTRUE;
+		if (In_Mass < 2.7) PairMass_Loose_flag = kTRUE;
+		if (In_Mass < 2.5) PairMass_Stand_flag = kTRUE;
+		if (In_Mass < 2.3) PairMass_Tight_flag = kTRUE;
 
 		//Fill
 		//+++++++++++++++++++++++++++++++++++++++
