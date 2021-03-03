@@ -1,45 +1,53 @@
 //#include "DrawTool.C"
 
+TH1D* ReadFONLL(TString filename, Int_t nPtBins, Double_t* binning);
 TH1D* GetBottomBayronCorrectedSpectrum(TFile* MCROOTFile, TH1D* hCMSLb, Double_t BRFraction, const Char_t* Cut, const Char_t* CutFlag, TH1D* hMeas_tmp, Bool_t DrawOption = kFALSE){
   #ifdef __CINT__
     gSystem->Load("libRooUnfold");
   #endif
 
+  TString dFONLLB13TeV = "../input/FONLL-Bmeson-dsdpt-sqrts13000-20GeV.txt";
+  TString dFONLLB5TeV = "../input/FONLL-Bmeson-dsdpt-sqrts7000-20GeV.txt";
+
   //1) Fit 7TeV CMS Lb spectrum with Tasllis function---------------------------------------------------------------------------------
   TF1 *fTsallis = new TF1("Lambdab","[0]*x*(pow(1+(sqrt(pow(x,2)+pow(5.619,2))-5.619)/(7.6*1.1),-7.6))",0,50);
-  hCMSLb->Fit("Lambdab");
+  hCMSLb->Fit("Lambdab","0");
   fTsallis->SetParameters(fTsallis->GetParameters());
 
   //2) Multiply scale factor to convert to 13TeV Lb---------------------------------------------------------------------------------
-  double binning[10] = {1,2,3,4,5,6,8,12,16,20};
-  TH1D *hScaleFactor = new TH1D("hScaleFactor","",9, binning);  //B meson ratio -> B(13TeV)/B(7TeV)
-  Double_t BC_ScaleFactor[9] = {1.53313, 1.69604, 1.806626, 1.887637, 1.950308, 2.018669, 2.121922, 2.249672, 2.439034};
-  Double_t BE_ScaleFactor[9] = {0.002688548, 0.003208365, 0.004097259, 0.005324936, 0.006890631, 0.009749647, 0.01760265, 0.03540223, 0.06652629};
-  for(int i = 0; i<9; i++){
-    hScaleFactor->SetBinContent(i+1,BC_ScaleFactor[i]);
-    hScaleFactor->SetBinError(i+1,BE_ScaleFactor[i]);
-  }
+  Double_t binning[11] = {0,1,2,3,4,5,6,8,12,16,20};
+  TH1D* hBmeson13TeV = ReadFONLL(dFONLLB13TeV,10,binning);
+  TH1D* hBmeson5TeV = ReadFONLL(dFONLLB5TeV,10,binning);
+  TH1D *hScaleFactor = GetRatio(hBmeson13TeV,hBmeson5TeV,"s");  //B meson ratio -> B(13TeV)/B(7TeV)
 
-  TH1D* h13TeVLb = new TH1D("h13TeVLb","",9,binning);
-  for(int i=1; i<10; i++) h13TeVLb->SetBinContent(i,fTsallis->Eval(h13TeVLb->GetBinCenter(i))*hScaleFactor->GetBinContent(i)); //Error is not assigned since we don't know the error at 1 to 10 pT
+  TH1D* h13TeVLb = new TH1D("h13TeVLb","",10,binning);
+  for(int i=1; i<11; i++) h13TeVLb->SetBinContent(i,fTsallis->Eval(h13TeVLb->GetBinCenter(i))*hScaleFactor->GetBinContent(i)); //Error is not assigned since we don't know the error at 1 to 10 pT
 
   //3) Multiply Branching ratio fraction to conver to Xib spectrum---------------------------------------------------------------------------------
   TH1D* h13TeVXib = (TH1D*) h13TeVLb->Clone("h13TeVXib");
   h13TeVXib->Scale(BRFraction);
 
   //4) Calculate Xib yield---------------------------------------------------------------------------------
-  double ptbin[9] = {1,1,1,1,1,2,4,4,4};
-  TH1D* h13TeVXibRaw = new TH1D("h13TeVXibRaw","",9,binning);
-  Double_t Luminosity=1.88554e+09/(57.8*1000000);  //pp 13TeV integrated luminosity
-  for(int i=1; i<10; i++) h13TeVXibRaw->SetBinContent(i,h13TeVXib->GetBinContent(i)*ptbin[i-1]*2*Luminosity);
+  double ptbin[10] = {1,1,1,1,1,1,2,4,4,4};
+  TH1D* h13TeVXibRaw = new TH1D("h13TeVXibRaw","",10,binning);
+  Double_t Luminosity=1.86437e+09/(57.8*1000000);  //pp 13TeV integrated luminosity
+  for(int i=1; i<11; i++) h13TeVXibRaw->SetBinContent(i,h13TeVXib->GetBinContent(i)*ptbin[i-1]*2*Luminosity);
 
   TH1D* hGenXib = (TH1D*) MCROOTFile->Get("XibGen05");  //Number of Xib in generation level
   TH1D* hRecoXib = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevXib_%s_%s",Cut,CutFlag));  //Number of Xib in reconstruction level
   TH1D* hRecoeXi = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevPairXib_%s_%s",Cut,CutFlag));  //Number of eXi from Xib
   TH2D* hRM_Xib = (TH2D*) MCROOTFile->Get(Form("hRPM_%s_%s_Xib",Cut,CutFlag));  //Response matrix of Xib and eXi
-  TH1D* hXibEff = (TH1D*) hRecoXib->Clone(Form("hXibEff_%s_%s",Cut,CutFlag));
+  TH1D* hXibEff_tmp = (TH1D*) hRecoXib->Clone(Form("hXibEff_%s_%s",Cut,CutFlag));
+  double binning2[10] = {1,2,3,4,5,6,8,12,16,20};
+  TH1D* hXibEff = (TH1D*) hXibEff_tmp->Rebin(9,Form("hXibEff_%s_%s_rebin",Cut,CutFlag),binning2);
   hXibEff->Divide(hXibEff,hGenXib,1,1,"b");  //Xib efficiency
-  h13TeVXibRaw->Multiply(hXibEff);
+  TH1D* hXibEff2 = new TH1D(Form("hXibEff_%s_%s_rebin2",Cut,CutFlag),"",10,binning);
+  for(int i=2; i<11; i++){
+    hXibEff2->SetBinContent(i,hXibEff->GetBinContent(i-1));
+    hXibEff2->SetBinError(i,hXibEff->GetBinError(i-1));
+  }
+  hXibEff2->SetBinContent(1,0);
+  h13TeVXibRaw->Multiply(hXibEff2);
 
   //5) Convert to eXi spectrum from Xib spectrum---------------------------------------------------------------------------------
   RooUnfoldResponse response(hRecoXib,hRecoeXi,hRM_Xib);
@@ -108,7 +116,41 @@ TH1D* GetBottomBayronCorrectedSpectrum(TFile* MCROOTFile, TH1D* hCMSLb, Double_t
     delete h13TeVLb;
     delete h13TeVXib;
     delete hRM_Xib;
+    delete hBmeson5TeV;
+    delete hBmeson13TeV;
   }
 
   return hMeas;
+}
+
+TH1D* ReadFONLL(TString filename, Int_t nPtBins, Double_t* binning){
+  FILE* infil=fopen(filename.Data(),"r");
+  Char_t line[101];
+  Char_t* rc;
+  for(Int_t il=0; il<16; il++){
+    rc=fgets(line,101,infil);
+    if(strstr(line,"central")) break;
+  }
+  Float_t pt,csc;
+  Int_t iPt=0;
+  Double_t x[100],y[100];
+  Bool_t ok;
+  while(!feof(infil)){
+    ok=fscanf(infil,"%f %f",&pt,&csc);
+    if(feof(infil)) break;
+    x[iPt]=pt;
+    y[iPt]=csc;
+    iPt++;
+  }
+  fclose(infil);
+
+  TH1D* hfonll=new TH1D(filename.Data(),"",100,0,20);
+  for(Int_t iBin=0; iBin<iPt; iBin++){
+    hfonll->SetBinContent(iBin+1,y[iBin]);
+    hfonll->SetBinError(iBin+1,0.);
+  }
+  TH1D* hfonll_rebin = (TH1D*) hfonll->Rebin(nPtBins,filename.Data(),binning);
+  delete hfonll;
+
+  return hfonll_rebin;
 }

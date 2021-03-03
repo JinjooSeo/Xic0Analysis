@@ -1,12 +1,10 @@
 //#include "DrawTool.C"
 
-TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t GetSysError, Bool_t DrawOption = kFALSE){
+TH1D* GetPromptFraction(TFile* UnweightedMCROOT, TFile* WeightedMCROOT, TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t GetSysError, Bool_t DrawOption = kFALSE){
   TFile* PythiaROOT;    PythiaROOT = TFile::Open("HistogramXic.root");
-  TFile* UnweightedMCROOT;    UnweightedMCROOT = TFile::Open("MCAnalysisHistogram.root");
-  TFile* WeightedMCROOT;    WeightedMCROOT = TFile::Open("MCWeightedAnalysisHistogram.root");
-  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("DmesonLcPredictions_13TeV_y05_pythia8.root");
-  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("DmesonLcPredictions_13TeV_y05_pythia8_FONLLcent.root");
-  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("DmesonLcPredictions_13TeV_y05_pythia8_FFcent.root");
+  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
   TFile* RatioXicLcROOT;    RatioXicLcROOT = TFile::Open("Xic0toLc_pp13TeV_new.root");
 
   TH1D** hFeeddownLc = new TH1D*[7];
@@ -26,32 +24,40 @@ TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t Get
   TH1D* hMCPromptXic0 = (TH1D*) PythiaROOT->Get("hXicZeroSpectrumY05_px__2;1");
   TH1D* hInclusiveLc = (TH1D*) FeeddownLcROOT->Get("hLcpkpipred_central");
   hFeeddownLc[0] = (TH1D*) FeeddownLcROOT->Get("hLcpkpifromBpred_central_corr");
-  hFeeddownLc[1] = (TH1D*) FeeddownLcROOT->Get("hLcpkpifromBpred_max_corr");  //hFeeddownLcMax
-  hFeeddownLc[2] = (TH1D*) FeeddownLcROOT->Get("hLcpkpifromBpred_min_corr");  //hFeeddownLcMin
+  hFeeddownLc[1] = (TH1D*) FeeddownLcROOT->Get("hLcpkpifromBpred_max_corr");  //hFeeddownLcFONLL+FFMax
+  hFeeddownLc[2] = (TH1D*) FeeddownLcROOT->Get("hLcpkpifromBpred_min_corr");  //hFeeddownLcFONLL+FFMin
   hFeeddownLc[3] = (TH1D*) FeeddownLcROOTFONLLcent->Get("hLcpkpifromBpred_max_corr");  //hFeeddownLcFFMax
   hFeeddownLc[4] = (TH1D*) FeeddownLcROOTFONLLcent->Get("hLcpkpifromBpred_min_corr");  //hFeeddownLcFFMin
   hFeeddownLc[5] = (TH1D*) FeeddownLcROOTFFcent->Get("hLcpkpifromBpred_max_corr");  //hFeeddownLcFONLLMax
   hFeeddownLc[6] = (TH1D*) FeeddownLcROOTFFcent->Get("hLcpkpifromBpred_min_corr");  //hFeeddownLcFONLLMin
   TH1D* hRatioXicLc = (TH1D*) RatioXicLcROOT->Get("hRatio_Xic0toLc");
 
-  TH1D* hPromptEff = (TH1D*) UnweightedMCROOT->Get("eff_p");
-  TH1D* hFeeddownEff = (TH1D*) UnweightedMCROOT->Get("eff_np");
+  TH1D* hPromptEff_de = (TH1D*) UnweightedMCROOT->Get("hMCGenPromptXic0_woW");
+  TH1D* hPromptEff = (TH1D*) UnweightedMCROOT->Get("hprompt");
+  hPromptEff->Divide(hPromptEff,hPromptEff_de,1,1,"b");
+  TH1D* hFeeddownEff_de = (TH1D*) UnweightedMCROOT->Get("hMCGenFeeddowmXic0_woW");
+  TH1D* hFeeddownEff = (TH1D*) UnweightedMCROOT->Get("hnonprompt");
+  hFeeddownEff->Divide(hFeeddownEff,hFeeddownEff_de,1,1,"b");
+
+//hFeeddownEff->Draw();
+//hInclusiveEff->Draw();
+
 
   //1) Feeddown Lc spectrum--------------------------------------------------------------
   double ptbinning[8] = {1., 2., 3, 4, 5, 6, 8., 12};
-  double ptbinning2[7] = {2., 3, 4, 5, 6, 8., 12};
+  //double ptbinning2[7] = {2., 3, 4, 5, 6, 8., 12};
   hMCFeedDownXic0 = (TH1D*) hMCFeedDownXic0->Rebin(7,"hMCFeedDownXic0",ptbinning);
   hMCPromptXic0 = (TH1D*) hMCPromptXic0->Rebin(7,"hMCPromptXic0",ptbinning);
   for(int i=0; i<7; i++) {
     hFeeddownLc[i] = (TH1D*) hFeeddownLc[i]->Rebin(7,NameOfFeeddownLc[i].Data(),ptbinning);
-    hFeeddownLc[i]->Scale(1e-6/0.0623); //pb to ub and divide Lc branching ratio
+    hFeeddownLc[i]->Scale(1e-6/(0.0628*20)); //pb to ub and divide Lc2pKpi branching ratio (PDG2020) + binning
     for(int j=1; j<8; j++){
-      hFeeddownLc[i]->SetBinContent(j,hFeeddownLc[i]->GetBinContent(j)/(hFeeddownLc[i]->GetBinWidth(j)*20));
-      hFeeddownLc[i]->SetBinError(j,hFeeddownLc[i]->GetBinError(j)/(hFeeddownLc[i]->GetBinWidth(j)*20));
+      hFeeddownLc[i]->SetBinContent(j,hFeeddownLc[i]->GetBinContent(j)/(hFeeddownLc[i]->GetBinWidth(j)));
+      hFeeddownLc[i]->SetBinError(j,hFeeddownLc[i]->GetBinError(j)/(hFeeddownLc[i]->GetBinWidth(j)));
     } //normalization
   }
-  hMCFeedDownXic0->Scale(1e-6/0.018); //pb to ub and divide Xic branching ratio -for systematic
-  hMCPromptXic0->Scale(1e-6/0.018); //pb to ub and divide Xic branching ratio -for systematic
+  hMCFeedDownXic0->Scale(1e-6/0.018); //pb to ub and divide Xic branching ratio -for systematic !!NOT USE!!
+  hMCPromptXic0->Scale(1e-6/0.018); //pb to ub and divide Xic branching ratio -for systematic !!NOT USE!!
   hMCPromptXic0->SetBinContent(6,hMCPromptXic0->GetBinContent(6)/2);
   hMCPromptXic0->SetBinContent(7,hMCPromptXic0->GetBinContent(7)/4);
   hMCFeedDownXic0->SetBinContent(6,hMCFeedDownXic0->GetBinContent(6)/2);
@@ -59,7 +65,7 @@ TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t Get
 
   //2) Ratio of Xic and Lc--------------------------------------------------------------
   TF1 *fFitFunction = new TF1("RatioFit","pol1",1,12);
-  hRatioXicLc->Fit(fFitFunction,"L");
+  hRatioXicLc->Fit(fFitFunction,"L 0");
   TF1 *fFitFunctionMax = new TF1("RatioFitMax","pol1",1,12); // for systematic
   fFitFunctionMax->SetParameter(0,fFitFunction->GetParameter(0)*2.0);
   fFitFunctionMax->SetParameter(1,fFitFunction->GetParameter(1)*2.0);
@@ -96,64 +102,66 @@ TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t Get
   }  //need to modify
 
   //4) Prompt Fraction of Xic--------------------------------------------------------------
-  TH1D* hInclusiveEff_tmp = new TH1D("hInclusiveEff_tmp","",6,ptbinning2);
-  TH1D* hFeeddownEff_tmp = new TH1D("hFeeddownEff_tmp","",6,ptbinning2);
+  TH1D* hInclusiveEff_tmp = new TH1D("hInclusiveEff_tmp","",7,ptbinning);
+  TH1D* hFeeddownEff_tmp = new TH1D("hFeeddownEff_tmp","",7,ptbinning);
 
   for(int i=0; i<7; i++) {
     hPromptFractionVarLc_tmp[i] = (TH1D*) hXic0CrossSection->Clone(Form("hPromptFractionVarLc_tmp%d",i));
-    hPromptFractionVarLc[i] = new TH1D(Form("hPromptFractionVarLc_%d",i),"",6,ptbinning2);
-    hFeeddownXicVarLc_tmp[i] = new TH1D(Form("hFeeddownXicVarLc_tmp%d",i),"",6,ptbinning2);
-    for(int j=1; j<7; j++){
+    hPromptFractionVarLc[i] = new TH1D(Form("hPromptFractionVarLc_%d",i),"",7,ptbinning);
+    hFeeddownXicVarLc_tmp[i] = new TH1D(Form("hFeeddownXicVarLc_tmp%d",i),"",7,ptbinning);
+    for(int j=1; j<8; j++){
       hPromptFractionVarLc[i]->SetBinContent(j,1);
       hPromptFractionVarLc[i]->SetBinError(j,0);
-      hFeeddownXicVarLc_tmp[i]->SetBinContent(j,hFeeddownXicVarLc[i]->GetBinContent(j+1));
-      hFeeddownXicVarLc_tmp[i]->SetBinError(j,hFeeddownXicVarLc[i]->GetBinError(j+1));
+      hFeeddownXicVarLc_tmp[i]->SetBinContent(j,hFeeddownXicVarLc[i]->GetBinContent(j));
+      hFeeddownXicVarLc_tmp[i]->SetBinError(j,hFeeddownXicVarLc[i]->GetBinError(j));
     }
   }
   for(int i=0; i<3; i++) {
       hPromptFractionVarRatio_tmp[i] = (TH1D*) hXic0CrossSection->Clone(Form("hPromptFractionVarRatio_tmp%d",i));
-      hPromptFractionVarRatio[i] = new TH1D(Form("hPromptFractionVarRatio%d",i),"",6,ptbinning2);
-      hFeeddownXicVarRatio_tmp[i] = new TH1D(Form("hFeeddownXicVarRatio_tmp%d",i),"",6,ptbinning2);
-    for(int j=1; j<7; j++){
+      hPromptFractionVarRatio[i] = new TH1D(Form("hPromptFractionVarRatio%d",i),"",7,ptbinning);
+      hFeeddownXicVarRatio_tmp[i] = new TH1D(Form("hFeeddownXicVarRatio_tmp%d",i),"",7,ptbinning);
+    for(int j=1; j<8; j++){
       hPromptFractionVarRatio[i]->SetBinContent(j,1);
       hPromptFractionVarRatio[i]->SetBinError(j,0);
-      hFeeddownXicVarRatio_tmp[i]->SetBinContent(j,hFeeddownXicVarRatio[i]->GetBinContent(j+1));
-      hFeeddownXicVarRatio_tmp[i]->SetBinError(j,hFeeddownXicVarRatio[i]->GetBinError(j+1));
+      hFeeddownXicVarRatio_tmp[i]->SetBinContent(j,hFeeddownXicVarRatio[i]->GetBinContent(j));
+      hFeeddownXicVarRatio_tmp[i]->SetBinError(j,hFeeddownXicVarRatio[i]->GetBinError(j));
     }
   }
+//hInclusiveEff->Draw();
 
-  for(int i=1; i<7; i++){
-    hInclusiveEff_tmp->SetBinContent(i,hInclusiveEff->GetBinContent(i+1));
-    hInclusiveEff_tmp->SetBinError(i,hInclusiveEff->GetBinError(i+1));
-    hFeeddownEff_tmp->SetBinContent(i,hFeeddownEff->GetBinContent(i+1));
-    hFeeddownEff_tmp->SetBinError(i,hFeeddownEff->GetBinError(i+1));
+  for(int i=1; i<8; i++){
+    hInclusiveEff_tmp->SetBinContent(i,hInclusiveEff->GetBinContent(i));
+    hInclusiveEff_tmp->SetBinError(i,hInclusiveEff->GetBinError(i));
+    hFeeddownEff_tmp->SetBinContent(i,hFeeddownEff->GetBinContent(i));
+    hFeeddownEff_tmp->SetBinError(i,hFeeddownEff->GetBinError(i));
   }
 
   for(int i=0; i<7; i++){
-    hPromptFractionVarLc_tmp[i]->Multiply(hInclusiveEff_tmp);
-    hFeeddownXicVarLc_tmp[i]->Multiply(hFeeddownEff_tmp);
-    hPromptFractionVarLc_tmp[i]->Divide(hFeeddownXicVarLc_tmp[i],hPromptFractionVarLc_tmp[i],1,1,"b");
-    hPromptFractionVarLc[i]->Add(hPromptFractionVarLc_tmp[i],-1);
+    hPromptFractionVarLc_tmp[i]->Multiply(hInclusiveEff_tmp); //XS_inclusive * e_inclusive
+    hFeeddownXicVarLc_tmp[i]->Multiply(hFeeddownEff_tmp); //XS_feeddown * e_feeddown
+    hPromptFractionVarLc_tmp[i]->Divide(hFeeddownXicVarLc_tmp[i],hPromptFractionVarLc_tmp[i],1,1,"b"); //N_feeddown / N_inclusive
+    hPromptFractionVarLc[i]->Add(hPromptFractionVarLc_tmp[i],-1);  //1.73 or 1 NEED TO CONFIRM
   }
   for(int i=0; i<3; i++){
     hPromptFractionVarRatio_tmp[i]->Multiply(hInclusiveEff_tmp);
     hFeeddownXicVarRatio_tmp[i]->Multiply(hFeeddownEff_tmp);
     hPromptFractionVarRatio_tmp[i]->Divide(hFeeddownXicVarRatio_tmp[i],hPromptFractionVarRatio_tmp[i],1,1,"b");
-    hPromptFractionVarRatio[i]->Add(hPromptFractionVarRatio_tmp[i],-1);
+    hPromptFractionVarRatio[i]->Add(hPromptFractionVarRatio_tmp[i],-1); //1.73 or 1 NEED TO CONFIRM
   }
-  TH1D* hfeedDumy = (TH1D*) hMCFeedDownXic0->Clone("hfeedDumy"); hfeedDumy->Multiply(hFeeddownEff);  //7
+
+  TH1D* hfeedDumy = (TH1D*) hMCFeedDownXic0->Clone("hfeedDumy"); hfeedDumy->Multiply(hFeeddownEff_tmp);  //7
   TH1D* hPrDumy = (TH1D*) hMCPromptXic0->Clone("hPrDumy"); hPrDumy->Multiply(hPromptEff); //7
   TH1D* hIncDumy = (TH1D*) hXic0CrossSection->Clone("hIncDumy"); hIncDumy->Multiply(hInclusiveEff_tmp); //6
-
-  TH1D* hNbtmp = new TH1D("hNbtmp","",6,ptbinning2);
-  for (int i=1; i<7; i++){ hNbtmp->SetBinError(i,hfeedDumy->GetBinError(i+1)); hNbtmp->SetBinContent(i,hfeedDumy->GetBinContent(i+1)); }
+//cout << "0" << endl;
+  TH1D* hNbtmp = new TH1D("hNbtmp","",7,ptbinning);
+  for (int i=1; i<8; i++){ hNbtmp->SetBinError(i,hfeedDumy->GetBinError(i)); hNbtmp->SetBinContent(i,hfeedDumy->GetBinContent(i)); }
   hNbtmp->Divide(hNbtmp,hIncDumy,1,1,"b");
   TH1D* hfc = (TH1D*) hPrDumy->Clone("hfc"); hfc->Add(hfeedDumy,1); hfc->Divide(hPrDumy,hfc,1,1,"b");
-
-  TH1D* hNb = new TH1D("hNb","",6,ptbinning2);
-  for (int i=1; i<7; i++){ hNb->SetBinError(i,0); hNb->SetBinContent(i,1); }
+//cout << "1" << endl;
+  TH1D* hNb = new TH1D("hNb","",7,ptbinning);
+  for (int i=1; i<8; i++){ hNb->SetBinError(i,0); hNb->SetBinContent(i,1); }
   hNb->Add(hNbtmp,-1);
-
+//cout << "2" << endl;
   if(DrawOption){
     SetStyle();
     int nCan = 13;
@@ -173,6 +181,7 @@ TH1D* GetPromptFraction(TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t Get
 
     can[1]->cd();
     hRatioXicLc->Draw(); hRatioXicLc->GetYaxis()->SetRangeUser(-0.2,2.0);
+    fFitFunction->Draw("SAME"); fFitFunction->SetLineColor(kRed);
     fFitFunctionMax->Draw("SAME"); fFitFunctionMax->SetLineColor(kRed);
     fFitFunctionMin->Draw("SAME"); fFitFunctionMin->SetLineColor(kRed);
     SetAxis(hRatioXicLc,"#it{p}_{T} (GeV/#it{c})","#Xi_{c}/#Lambda_{c}");

@@ -5,8 +5,8 @@ TH1D* GetUnfoldedSpectrum(TFile* WeightedROOTFile, TFile* MCROOTFile, TH1D* hMea
     gSystem->Load("libRooUnfold");
   #endif
 
-  double Unfoldbinning[10] = {1,2,3,4,5,6,8,12,16,20};
-  double ptbinning[7] = {2., 3., 4., 5., 6., 8., 12.};
+  double Unfoldbinning[11] = {0,1,2,3,4,5,6,8,12,16,20};
+  double ptbinning[8] = {1.,2., 3., 4., 5., 6., 8., 12.};
 
   //1) Prepare Histogram---------------------------------------------------------------------------------
   TH1D* hUnweigthedXic0 = (TH1D*) MCROOTFile->Get(Form("hMCRecoLevXic0_%s_%s",Cut,CutFlag));
@@ -25,8 +25,8 @@ TH1D* GetUnfoldedSpectrum(TFile* WeightedROOTFile, TFile* MCROOTFile, TH1D* hMea
   RooUnfoldResponse unfold_weighted(hWeigthedeXiPair,hWeigthedXic0,WeigthedMat_unfold);
   RooUnfoldResponse refold_weighted(hWeigthedXic0,hWeigthedeXiPair,WeigthedMat_refold);
 
-  TH1D *hUnweightedReco = new TH1D(Form("hUnweightedReco_%s_%s",Cut,CutFlag),"",9,Unfoldbinning);
-  TH1D *hWeightedReco = new TH1D(Form("hWeightedReco_%s_%s",Cut,CutFlag),"",9,Unfoldbinning);
+  TH1D *hUnweightedReco = new TH1D(Form("hUnweightedReco_%s_%s",Cut,CutFlag),"",10,Unfoldbinning);
+  TH1D *hWeightedReco = new TH1D(Form("hWeightedReco_%s_%s",Cut,CutFlag),"",10,Unfoldbinning);
 
   const Char_t* Bayes = "Bayes";
   const Char_t* Svd = "Svd";
@@ -49,23 +49,13 @@ TH1D* GetUnfoldedSpectrum(TFile* WeightedROOTFile, TFile* MCROOTFile, TH1D* hMea
     for (int i = 0; i<10; i++) cout <<i << " : "<< fDHist->GetBinContent(i) << endl;
   }
 
-  cout << "method=---------------------------------" << method << endl;
-
   //3) Output---------------------------------------------------------------------------------
-  TH1D* hUnweightedUnfolded = new TH1D(Form("hWoUnfolded_%s_%s",Cut,CutFlag),"",6,ptbinning);
-  for(int i=1; i<7; i++){
-    hUnweightedUnfolded->SetBinContent(i,hUnweightedReco->GetBinContent(i+1));
-    hUnweightedUnfolded->SetBinError(i,hUnweightedReco->GetBinError(i+1));
-  }
-  TH1D* hWeightedUnfolded = new TH1D(Form("hWUnfolded_%s_%s",Cut,CutFlag),"",6,ptbinning);
-  for(int i=1; i<7; i++){
-    hWeightedUnfolded->SetBinContent(i,hWeightedReco->GetBinContent(i+1));
-    hWeightedUnfolded->SetBinError(i,hWeightedReco->GetBinError(i+1));
-  }
+  TH1D* hUnweightedUnfolded = (TH1D*) hUnweightedReco->Rebin(7,Form("hWoUnfolded_%s_%s",Cut,CutFlag),ptbinning);
+  TH1D* hWeightedUnfolded = (TH1D*) hWeightedReco->Rebin(7,Form("hWUnfolded_%s_%s",Cut,CutFlag),ptbinning);
 
   if(DrawOption){
     SetStyle();
-    int nCan = 2;
+    int nCan = 3;
     TCanvas **can = new TCanvas*[nCan];
     for(int i=0; i<nCan; i++) can[i] = new TCanvas(Form("UnfoldCan%d",i),"",650,500);
 
@@ -79,13 +69,13 @@ TH1D* GetUnfoldedSpectrum(TFile* WeightedROOTFile, TFile* MCROOTFile, TH1D* hMea
     TH1D *hWeightedBack = (TH1D*) refolding_weighted.Hreco();
 
     can[1]->cd();
-    hUnweightedReco->Draw(); HistSty(hUnweightedReco,kBlue,kFullCircle);
+    hUnweightedReco->Draw(""); HistSty(hUnweightedReco,kBlue,kFullCircle);
     hWeightedReco->Draw("SAME"); HistSty(hWeightedReco,kGreen,kFullCircle);
     hMeas->Draw("SAME"); HistSty(hMeas,kBlack,kFullCircle);
     hUnweightedBack->Draw("SAME"); HistSty(hUnweightedBack,kRed,kCircle);
-    hWeightedBack->Draw("SAME"); HistSty(hWeightedBack,kYellow+2,kCircle);
+    hWeightedBack->Draw("HIST TEXT SAME"); HistSty(hWeightedBack,kYellow+2,kCircle);
     hUnweightedReco->GetYaxis()->SetRangeUser(0,1200);
-    SetAxis(hUnweightedReco,"#it{p}_{T}(e#Xi) (GeV/#it{c})","Entries");
+    SetAxis(hUnweightedReco,"#it{p}_{T} (GeV/#it{c})","Entries");
     TLegend *leg1 = new TLegend(0.55,0.65,0.76,0.82);
     leg1->AddEntry(hMeas,"measured");
     leg1->AddEntry(hUnweightedReco,"unfolded");
@@ -95,8 +85,14 @@ TH1D* GetUnfoldedSpectrum(TFile* WeightedROOTFile, TFile* MCROOTFile, TH1D* hMea
     LegSty(leg1);
     leg1->Draw();
 
+    can[2]->cd();
+    TH1D* hRatio_weigthing = (TH1D*) GetRatio(hWeightedReco,hUnweightedReco,"b");
+    SetAxis(hRatio_weigthing,"#it{p}_{T}(#Xi_{c}^{0}) (GeV/#it{c})","weighted/unweighted");
+    hRatio_weigthing->Draw();
+
     can[0]->SaveAs(Form("ResponseMatrixOfXic_%s_%s.pdf",Cut,CutFlag));
     can[1]->SaveAs(Form("UnfoldRefoldOfXic_%s_%s.pdf",Cut,CutFlag));
+    can[2]->SaveAs(Form("RatioOfWeightedUnweightedUnfolding_%s_%s.pdf",Cut,CutFlag));
 
     delete[] can;
   }
