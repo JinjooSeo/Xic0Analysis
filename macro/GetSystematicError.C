@@ -349,7 +349,7 @@ TH1D* GetSystematicUncertaintyOfBottomBayron(Double_t LbUncertainty, Double_t BR
 
 TH1D* GetCMSLbSpectrum(){
   TFile* ROOTCMS;
-  ROOTCMS = TFile::Open("HEPData-ins1113442-v1-Table_2.root");
+  ROOTCMS = TFile::Open("../input/HEPData-ins1113442-v1-Table_2.root");
   TDirectoryFile* dCMSLamb = (TDirectoryFile*) ROOTCMS->Get("Table 2");
   TH1D* hCMSLamb_tmp = (TH1D*) dCMSLamb->Get("Hist1D_y1");
   TH1D* hCMSLambe_tmp = (TH1D*) dCMSLamb->Get("Hist1D_y1_e1");

@@ -1,11 +1,11 @@
 //#include "DrawTool.C"
 
 TH1D* GetPromptFraction(TFile* UnweightedMCROOT, TFile* WeightedMCROOT, TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t GetSysError, Bool_t DrawOption = kFALSE){
-  TFile* PythiaROOT;    PythiaROOT = TFile::Open("HistogramXic.root");
-  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
-  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
-  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
-  TFile* RatioXicLcROOT;    RatioXicLcROOT = TFile::Open("Xic0toLc_pp13TeV_new.root");
+  TFile* PythiaROOT;    PythiaROOT = TFile::Open("../input/HistogramXic.root");
+  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root"); //will be added but not important
+  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root"); //will be added but not important
+  TFile* RatioXicLcROOT;    RatioXicLcROOT = TFile::Open("../input/Xic0toLc_pp13TeV_new.root");
 
   TH1D** hFeeddownLc = new TH1D*[7];
   TH1D** hFeeddownXicVarLc = new TH1D*[7];
