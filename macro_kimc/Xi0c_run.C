@@ -1,6 +1,6 @@
 //Include below libraries if you use ROOT6
-//#include "AliAnalysisTaskSEXic0Semileptonic.h"
-//#include "AliAnalysisAlien.h"
+#include "/home/alidock/work/Xic0Analysis/AliAnalysisTaskSEXic0Semileptonic.h"
+#include "AliAnalysisAlien.h"
 
 void ReadRunInfo(const char* listPath, const char* taskOpt, string& datPath, string& datPatt, vector<int>& vecRuns)
 {
@@ -35,9 +35,9 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
 {
 	enum {local, test, full, terminate, collect}; //Modes (argument)
 
-	const char* aliPhysV = "vAN-20200322-1";
-	const char* taskName = "Xi0cSemiL";
-	const char* taskAdd  = "Xi0c_add.C";
+	const char* aliPhysV = "vAN-20210301_ROOT6-1";
+	const char* taskName = "Xi0cSemiLeptonic";
+	const char* taskAdd  = "AddTaskXic0Semileptonic.C";
 	const char* taskSrc  = "AliAnalysisTaskSEXic0Semileptonic.cxx";
 	const char* taskLib  = "AliAnalysisTaskSEXic0Semileptonic.cxx AliAnalysisTaskSEXic0Semileptonic.h";
 
@@ -60,39 +60,8 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
     gROOT->ProcessLine(".include $ALICE_PHYSICS/include");
     gROOT->LoadMacro(Form("%s++g", taskSrc));
 
-	//ROOT5 style loading
 	//-------------------------------------------
-
-	#if 1
-	//Physics selection
-	if (taskOptStr.Contains("AOD"))
-	{
-		gROOT->LoadMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C");
-		AliPhysicsSelectionTask* taskPhys = AddTaskPhysicsSelection(isMC, 1); //0 for PbPb, 1 for pp/pPb
-		if (!taskPhys) { cout <<"Cannot find AliPhysicsSelectionTask!" <<endl; return; }
-	}
-
-	//Multiplicity
-	gROOT->LoadMacro("$ALICE_PHYSICS/OADB/COMMON/MULTIPLICITY/macros/AddTaskMultSelection.C");
-	AliMultSelectionTask* taskMult = AddTaskMultSelection(true);
-	if (!taskMult) { cout <<"Cannot find AliMultSelectionTask!" <<endl; return; }
-
-	//pID
-	gROOT->LoadMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
-    AliAnalysisTaskPIDResponse* taskPid = AddTaskPIDResponse(isMC);
-	if (!taskPid) { cout <<"Cannot find AliAnalysisTaskPIDResponse!" <<endl; return; }
-
-	//Main task
-	gROOT->LoadMacro(taskAdd);
-	TString taskNameStr = taskName;
-	AliAnalysisTaskSEXic0Semileptonic* task = Xi0c_add(taskNameStr, taskOptStr);
-	if (!task) { cout <<"Cannot find AliAnalysisTaskSEXic0Semileptonic!" <<endl; return; }
-	#endif
-
-	//ROOT6 style loading
-	//-------------------------------------------
-
-	#if 0
+	
     if (taskOptStr.Contains("AOD"))
     {
         const char* pathPhys = "$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C";
@@ -112,9 +81,8 @@ void Xi0c_run(const int mode = 0, const char* listPath = ".", const char* taskOp
     AliAnalysisTaskPIDResponse* taskPid = reinterpret_cast<AliAnalysisTaskPIDResponse*>(macPid.Exec());
 
     TMacro macTask(gSystem->ExpandPathName(taskAdd));
-    macTask.SetParams(Form("\"%s\", \"%s\"", taskName, taskOpt));
+    macTask.SetParams(Form("\"%s\",\"%s\",\"%s\",\"%s\",\"%i\"", taskName, taskOpt, "PP", "", true));
     AliAnalysisTaskSEXic0Semileptonic *task = reinterpret_cast<AliAnalysisTaskSEXic0Semileptonic*>(macTask.Exec());
-	#endif
 
 	//-------------------------------------------
 

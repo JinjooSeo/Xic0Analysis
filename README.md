@@ -3,7 +3,27 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
-Update at Fed.10, 2021 (kimc)
+Update at Mar. 8, 2021 (kimc)
+
+	- Save a triggerbit for data only: for MC, 0 will be assigned
+	- Cleaned up some obsolete objects (items commented out, SPD histograms, etc)
+	- Bug (?) found: all trees' float type were "/f (24 bit truncated float)" -> updated to "/F (32 bit float)"
+	- Added hard coded run number cut to accept valid runs only (RUN2: 252000 - 295000)
+	- Added a boolean variable "fINEL" under EventTree: true for "INEL > 0"
+		a. data: AliPPVsMultUtils::IsINELgtZERO(event) = kINT7 + SPD tracklets >= 1 + |eta| < 1"
+		b. MC: require "IsPhysicalPrimary + IsCharged + |eta| < 1"
+		   * Make sure to run "general purpose MC" during the train run, when you deal with "INEL > 0" !
+	- AliNormalizationCounter update
+		a. For AliAnalysisTaseSE...,
+		   a-1. Added 4 more counter object: MB_0to100, MB_0p1to30, MB_30to100, and HMV0_0to0p1
+		        * Cannot use one common counter since official method accepts only integer multiplicity
+		   a-2. New AliRDHFCutsXictoeleXifromAODtracks object (fEvtCuts_HMV0) added for HMV0
+		b. For AddTask..., added above counter objects as container 8-11
+	- macro/kimc/Xic0AnaMakeRoot.C also updated accordingly
+
+//-----------------------------------------------
+
+Update at Feb. 10, 2021 (kimc)
 
 	- Added analysis macros for final cross section estimation
 		a. Xi0cAnaMakeRoot.C (updated Xi topology cut after WDK)
@@ -12,7 +32,7 @@ Update at Fed.10, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Jan.25, 2021 (kimc)
+Update at Jan. 25, 2021 (kimc)
 
 	- Added 2nd production macro (Xic0AnaMakeRoot.C) for analysis
 		a. A few modifications compared to original, especially adding > 0 on several denominators
