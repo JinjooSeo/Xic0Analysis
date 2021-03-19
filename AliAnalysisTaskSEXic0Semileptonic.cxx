@@ -1018,7 +1018,7 @@ void AliAnalysisTaskSEXic0Semileptonic::FillMCXic0(AliAODMCParticle *mcpart)
 		Double_t pxv = MCcasc->Px(); Double_t pyv = MCcasc->Py();
 		Double_t eXi = sqrt(pow(pxe+pxv,2)+pow(pye+pyv,2));
 		fHistos->FillTH1("hXicRap",mcpart->Y());
-		fHistos->FillTH1("hXicPtRap",mcpart->Pt(),mcpart->Y());
+		fHistos->FillTH2("hXicPtRap",mcpart->Pt(),mcpart->Y());
 
 		fMCXicTreeVariable[0] = mcpart->Pt();
 		fMCXicTreeVariable[1] = MCe->Pt();
