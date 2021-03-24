@@ -3,6 +3,15 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+Update at Mar. 24, 2021 (kimc)
+
+	- AliNormalizationCounter update
+		a. Moved "StoreEvent" invoking point:
+		   after "pileup rejection and Vtx->GetNContributors() > 1" and before |zVtx| < 10
+		b. To match the events being analyzed and normalization factor obatained via ANC
+
+//-----------------------------------------------
+
 Update at Mar. 8, 2021 (kimc)
 
 	- Save a triggerbit for data only: for MC, 0 will be assigned

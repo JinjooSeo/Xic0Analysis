@@ -459,15 +459,6 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 		if ( fCentralSPD == 0. && fNSPDTracklets == 0. ) fCentralSPD = fNSPDTracklets = -999;
 	}
 
-	//AliNormalizationCounter: store events for later normalization
-	fCounter->StoreEvent(fEvt, fEvtCuts, IsMC);
-
-    //kimc, Mar. 18
-    if (fCentrality >=  0.0 && fCentrality <= 100.0) fCounter_MB_0to100  ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >=  0.1 && fCentrality <=  30.0) fCounter_MB_0p1to30 ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >= 30.0 && fCentrality <= 100.0) fCounter_MB_30to100 ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >=  0.0 && fCentrality <=   0.1) fCounter_HMV0_0to0p1->StoreEvent(fEvt, fEvtCuts_HMV0, IsMC);
-
 	//-----------------------------------------------------
 
 	//Load InputHandler for each event
@@ -521,6 +512,17 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	const AliVVertex* Vtx = fEvt->GetPrimaryVertex();
 	if (!Vtx || Vtx->GetNContributors() < 1) return;
 	fHistos->FillTH1("hEventNumbers", "Goodz", 1);
+
+	//! Mar. 22
+	//AliNormalizationCounter: store events for later normalization (* original invoke position)
+	fCounter->StoreEvent(fEvt, fEvtCuts, IsMC);
+
+    //kimc, Mar. 18
+    if (fCentrality >=  0.0 && fCentrality <= 100.0) fCounter_MB_0to100  ->StoreEvent(fEvt, fEvtCuts, IsMC);
+    if (fCentrality >=  0.1 && fCentrality <=  30.0) fCounter_MB_0p1to30 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+    if (fCentrality >= 30.0 && fCentrality <= 100.0) fCounter_MB_30to100 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+    if (fCentrality >=  0.0 && fCentrality <=   0.1) fCounter_HMV0_0to0p1->StoreEvent(fEvt, fEvtCuts_HMV0, IsMC);
+	//!
 
 	if (!(fabs(Vtx->GetZ())<10.)) return;
 	fHistos->FillTH1("hEventNumbers", "Goodzcut", 1);
