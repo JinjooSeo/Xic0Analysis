@@ -104,7 +104,7 @@ AliAnalysisTaskSEXic0Semileptonic::AliAnalysisTaskSEXic0Semileptonic() :
 	DefineOutput( 8, AliNormalizationCounter::Class()); fCounter_MB_0to100 = 0;
 	DefineOutput( 9, AliNormalizationCounter::Class()); fCounter_MB_0p1to30 = 0;
 	DefineOutput(10, AliNormalizationCounter::Class()); fCounter_MB_30to100 = 0;
-	DefineOutput(11, AliNormalizationCounter::Class()); fCounter_HMV0_0to0p1 = 0;	
+	DefineOutput(11, AliNormalizationCounter::Class()); fCounter_HMV0_0to0p1 = 0;
 }
 
 //----------------------------------------------------------------------------------------------------------
