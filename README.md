@@ -3,6 +3,18 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+Update at June 16, 2021 (kimc)
+
+	- Recovering analysis chain (still ongoing)
+	- Xi0cAnaMakeRoot.C
+		a. Modified arguments interface for better script based handling
+		b. Argument " INELLgt0 " is by default on (being applied) - watch out
+		c. In " eXiPairTree() ", enforced all histograms' binning to be same (1st one, 0 < pT < 20)
+		d. In " eXiPairTree() ", modified fit function definition again (expo only when parameters are not 1.0)
+	- Newly added Xi0cAnaRun.sh
+
+//-----------------------------------------------
+
 Update at Mar. 24, 2021 (kimc)
 
 	- AliNormalizationCounter update
