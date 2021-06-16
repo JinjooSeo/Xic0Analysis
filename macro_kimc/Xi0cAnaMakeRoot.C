@@ -18,6 +18,7 @@
 #include <TH2.h>
 #include <TKey.h>
 #include <TLegend.h>
+#include <TMath.h>
 #include <TROOT.h>
 #include <TString.h>
 #include <TSystem.h>
@@ -36,45 +37,70 @@ TH2F* MakeTH2(const Char_t *name, Int_t NumOfBin, Double_t* binning);
 void nSigmaPlot(TFile* F, const char* SDIR); //nSigmaTOF and TPC plot
 void XiMassvsPt(TFile* F, const char* SDIR); //Xi mass distribution for various pT bin
 void XiCutDistribution(TFile *F, const char* SDIR); //look Xi cut value distribution from prompt an feeddown Xic0
-void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double* MultPerc, double* WFitPar);
+void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG,
+		double* MultPerc, double* WFitPar, bool INELLgt0);
 
 //----------------------------------------------------------------
-void Xi0cAnaMakeRoot(TString inFile = "AnalysisResults_data.root")
+void Xi0cAnaMakeRoot(
+		TString inFile = "AnalysisResults_data.root",
+		const char* TRIG = "MB", //MB, HMV0, or HMSPD
+		const double perc0 = 0.0,
+		const double perc1 = 100,
+		const bool INELLgt0 = true
+		)
 {
-	const char* TRIG = "MB"; //MB, HMV0, or HMSPD
-	double MultPerc[2] = {0.0, 100}; //Multiplicity percentile
-	double WFitPar[2] = {1.0, 1.0};
-	//double WFitPar[2] = {0.889618,    -0.329188}; //default
+	//+++++++++++++++++++++++++++++++++++++++++++
+
+	double MultPerc[2] = {perc0, perc1};
+	double WFitPar[2] = {0.889618, -0.329188}; //default
 	//double WFitPar[2] = {1.43224e+00, -4.44314e-01}; //var1
 	//double WFitPar[2] = {1.99904e-01, -1.98923e-01}; //var2
 
-	//+++++++++++++++++++++++++++++++++++++++++++
-
 	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file
-    const char* PERC = Form("%2.1fto%2.1f", MultPerc[0], MultPerc[1]);
+    const char* PERC = "";
 
+	//Determine type and relevant parameters
     if ( !inFile.Contains("data") && !inFile.Contains("MC") ) { cout <<"File type?\n"; return; }
     bool IsMC = inFile.Contains("MC")?true:false;
     const char* TYPE = (IsMC==false)?"data":"MC";
-    if (IsMC && fabs(WFitPar[0]-1.0) > 1.e-5) TYPE = Form("%swgt", TYPE);
-    if (IsMC && fabs(WFitPar[0]-1.0) < 1.e-5) TYPE = Form("%sraw", TYPE);
 
-    cout <<"\nGenerating ROOT file in following setup:" <<endl;
-    cout <<Form("- Type: %s", TYPE) <<endl;
-    cout <<Form("- Trigger: %s", TRIG) <<endl;
-    if (!IsMC) cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]) <<endl;
-    else       cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPar[0], WFitPar[1]) <<endl;
+	if (!IsMC) PERC = Form("%2.1fto%2.1f", MultPerc[0], MultPerc[1]);
+	else
+	{
+		if (fabs(WFitPar[0]-1.0) > 1.e-5) TYPE = Form("%s_wgt", TYPE); //Weighted
+		if (fabs(WFitPar[0]-1.0) < 1.e-5) TYPE = Form("%s_raw", TYPE); //Raw
+	}
 
 	//+++++++++++++++++++++++++++++++++++++++++++
 
+	TString outName;
+    cout <<"\nGenerating ROOT file in following setup:" <<endl;
+    cout <<Form("- Type: %s", TYPE) <<endl;
+	if (!IsMC)
+	{
+		cout <<Form("- Trigger: %s\n", TRIG);
+		cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]);
+		outName = Form("out_%s_%s_%s.root", TYPE, TRIG, PERC);
+		outName.ReplaceAll("0.1", "0p1");
+		outName.ReplaceAll("0.0", "0");
+	}
+    else
+	{
+		cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPar[0], WFitPar[1]);
+		outName = Form("out_%s.root", TYPE);
+	}
+	if (INELLgt0) cout <<"- INEL>0 is on" <<endl;
+
+	//+++++++++++++++++++++++++++++++++++++++++++
+	
 	TFile* F = TFile::Open(inFile);
 	if (!F || F->IsZombie()) { cout <<Form("Cannot open %s!\n", (const char*)inFile); return; }
-	TFile* G = new TFile(Form("out_%s_%s_%s.root", TYPE, TRIG, PERC), "recreate");
+	TFile* G = new TFile(outName, "recreate");
 
 	//nSigmaPlot(F, SDIR);
 	//XiMassvsPt(F, SDIR);
 	//XiCutDistribution(F, SDIR);
-	eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPar);
+	eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPar, INELLgt0);
 
 	G->Write();
 	G->Close();
@@ -179,11 +205,13 @@ void XiCutDistribution(TFile *F, const char* SDIR)
 	return;
 }//XiCutDistribution
 
-//----------------------------------------------------------------------------------------------------------
-void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double* MultPerc, double* WFitPar)
+//----------------------------------------------------
+void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
+		const char* TRIG, double* MultPerc, double* WFitPar, bool INELLgt0
+		)
 {
 	//Trigger bits
-	if ( strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") && strcmp(TRIG, "HMSPD") && strcmp(TRIG, "HMOR") )
+	if ( !IsMC && strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") && strcmp(TRIG, "HMSPD") )
 	{
 		cout <<"No valid TRIG provided! Stop.\n";
 		return;
@@ -194,7 +222,8 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 	UInt_t TrigHMSPD = 8;
 
 	//MC weight fit parameters
-	TF1* fWeightFit = new TF1("fWeightFit", "1", 0, 20);
+	const char* FitFcnDef = (fabs(WFitPar[0]-1.0) < 1.e-5)?"1":"expo";
+	TF1* fWeightFit = new TF1("fWeightFit", FitFcnDef, 0, 20);
 	fWeightFit->SetParameter(0, WFitPar[0]);
 	fWeightFit->SetParameter(1, WFitPar[1]);
 
@@ -737,27 +766,27 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 
 	//+++++++++++++++++++++++++++++++++++++++++++
 
-	TH1F* hMCGenInclusiveXic0_woW = MakeTH1("hMCGenInclusiveXic0_woW", nBinning2, binning2);
-	TH1F* hMCGenPromptXic0_woW = MakeTH1("hMCGenPromptXic0_woW",       nBinning2, binning2);
-	TH1F* hMCGenFeeddowmXic0_woW = MakeTH1("hMCGenFeeddowmXic0_woW",   nBinning2, binning2);
+	//kimc, June 7 (2021) - change all binning2 (total 7 bins, up to pT 12) to binning1
+	TH1F* hMCGenInclusiveXic0_woW = MakeTH1("hMCGenInclusiveXic0_woW", nBinning, binning);
+	TH1F* hMCGenPromptXic0_woW = MakeTH1("hMCGenPromptXic0_woW",       nBinning, binning);
+	TH1F* hMCGenFeeddowmXic0_woW = MakeTH1("hMCGenFeeddowmXic0_woW",   nBinning, binning);
 
-	TH1F* hMCGenInclusiveXic0_W_rap08 = MakeTH1("hMCGenInclusiveXic0_W_rap08", nBinning2, binning2);
-	TH1F* hMCGenPromptXic0_W_rap08 = MakeTH1("hMCGenPromptXic0_W_rap08",       nBinning2, binning2);
-	TH1F* hMCGenFeeddowmXic0_W_rap08 = MakeTH1("hMCGenFeeddowmXic0_W_rap08",   nBinning2, binning2);
+	TH1F* hMCGenInclusiveXic0_W_rap08 = MakeTH1("hMCGenInclusiveXic0_W_rap08", nBinning, binning);
+	TH1F* hMCGenPromptXic0_W_rap08 = MakeTH1("hMCGenPromptXic0_W_rap08",       nBinning, binning);
+	TH1F* hMCGenFeeddowmXic0_W_rap08 = MakeTH1("hMCGenFeeddowmXic0_W_rap08",   nBinning, binning);
 
-	TH1F* hMCGenInclusiveXic0_W = MakeTH1("hMCGenInclusiveXic0_W", nBinning2, binning2);
-	TH1F* hMCGenPromptXic0_W = MakeTH1("hMCGenPromptXic0_W",       nBinning2, binning2);
-	TH1F* hMCGenFeeddowmXic0_W = MakeTH1("hMCGenFeeddowmXic0_W",   nBinning2, binning2);
+	TH1F* hMCGenInclusiveXic0_W = MakeTH1("hMCGenInclusiveXic0_W", nBinning, binning);
+	TH1F* hMCGenPromptXic0_W = MakeTH1("hMCGenPromptXic0_W",       nBinning, binning);
+	TH1F* hMCGenFeeddowmXic0_W = MakeTH1("hMCGenFeeddowmXic0_W",   nBinning, binning);
 
-	TH1F *hprompt    = MakeTH1("hprompt",    nBinning2, binning2); //kimc: replaced 7 to nBinning2
-	TH1F *hnonprompt = MakeTH1("hnonprompt", nBinning2, binning2);
-	TH1F *hinclu     = MakeTH1("hinclu",     nBinning2, binning2);
+	TH1F *hprompt    = MakeTH1("hprompt",    nBinning, binning); //kimc: replaced 7 to nBinning2
+	TH1F *hnonprompt = MakeTH1("hnonprompt", nBinning, binning);
+	TH1F *hinclu     = MakeTH1("hinclu",     nBinning, binning);
 
 	TH2F* hRPM_preliminary = new TH2F("hWRPM_preliminary","",60,1,20,60,1,20); hRPM_preliminary->Sumw2();
 	TH1F* hOA_Data         = new TH1F("oa_data","",50,0,180); hOA_Data->Sumw2();
 	TH1F* hOA_MC           = new TH1F("oa_mc","",50,0,180); hOA_MC->Sumw2();
 
-	#if 1
 	//Loop over tracks
 	//*****************************************************
 
@@ -774,11 +803,12 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 			if ( fabs(mcGenXic0pT)!=9999 && fabs(mcGenXic0rap)<0.5 )
 			{
 				hMCGenInclusiveXic0_woW->Fill(mcGenXic0pT);
-				hMCGenInclusiveXic0_W->Fill(mcGenXic0pT,fWeightFit->Eval(mcGenXic0pT));
-				if (mcGencflag == 1) hMCGenPromptXic0_woW->Fill(mcGenXic0pT);
-				if (mcGencflag == 1) hMCGenPromptXic0_W->Fill(mcGenXic0pT,fWeightFit->Eval(mcGenXic0pT));
+				hMCGenInclusiveXic0_W  ->Fill(mcGenXic0pT, fWeightFit->Eval(mcGenXic0pT));
+
+				if (mcGencflag == 1) hMCGenPromptXic0_woW  ->Fill(mcGenXic0pT);
+				if (mcGencflag == 1) hMCGenPromptXic0_W    ->Fill(mcGenXic0pT, fWeightFit->Eval(mcGenXic0pT));
 				if (mcGenbflag == 1) hMCGenFeeddowmXic0_woW->Fill(mcGenXic0pT);
-				if (mcGenbflag == 1) hMCGenFeeddowmXic0_W->Fill(mcGenXic0pT,fWeightFit->Eval(mcGenXic0pT));
+				if (mcGenbflag == 1) hMCGenFeeddowmXic0_W  ->Fill(mcGenXic0pT,fWeightFit->Eval(mcGenXic0pT));
 			}
 			if ( fabs(mcGenXic0pT)!=9999 && fabs(mcGenXic0rap)<0.8 )
 			{
@@ -789,6 +819,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		}
 	}//MCXicTree
 
+	#if 1
 	for (Int_t i=0; i<nTracks; i++)
 	{
 		//Eventwise cut, kimc
@@ -799,7 +830,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		//Sanity check by run number
 		if ( (fRunNumber < 252000) || (fRunNumber > 295000) )
 		{
-			cout <<Form("Invalid RunNumber %f detected in track %i: skip.", fRunNumber, i) <<endl;
+			//cout <<Form("Invalid RunNumber %1.0f detected in track %i: skip. \n", fRunNumber, i);
 			continue;
 		}
 
@@ -808,15 +839,14 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
         if      ( !strcmp(TRIG, "MB")    && (fTrigBit & TrigMB)    ) TrigFired = true;
         else if ( !strcmp(TRIG, "HMV0")  && (fTrigBit & TrigHMV0)  ) TrigFired = true;
         else if ( !strcmp(TRIG, "HMSPD") && (fTrigBit & TrigHMSPD) ) TrigFired = true;
-        else if ( !strcmp(TRIG, "HMOR") )
-        {
-            if ( (fTrigBit & TrigHMV0) || (fTrigBit & TrigHMSPD) ) TrigFired = true;
-        }
         if (IsMC==false && TrigFired==false) continue;
 
         //Multiplicity percentile, apply only to the data
         const Float_t tempMP = fCentrality;
         if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
+
+		//INEL > 0 only, updated at June 8 (2021)
+		if (INELLgt0==true && fINEL==false) continue;
 
 		//eXi pair - flags
 		//+++++++++++++++++++++++++++++++++++++++
@@ -917,12 +947,13 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=T_e_nsigma_cut && nSigmaTPC<=3) e_PID_Tight_flag = kTRUE;
 		if (fabs(nSigmaTOF)<=3 && nSigmaTPC>=VT_e_nsigma_cut && nSigmaTPC<=3) e_PID_VTight_flag = kTRUE;
 
+		//OpenA!
 		Bool_t OPAngle_Loose_flag = kFALSE;
 		Bool_t OPAngle_Stand_flag = kFALSE;
 		Bool_t OPAngle_Tight_flag = kFALSE;
-		if (cosoa>cos( 90*(3.141592/180))) OPAngle_Loose_flag = kTRUE; //NO LOOSE CUT FOR OPENGING ANGLE
-		if (cosoa>cos( 90*(3.141592/180))) OPAngle_Stand_flag = kTRUE;
-		if (cosoa>cos( 70*(3.141592/180))) OPAngle_Tight_flag = kTRUE;
+		if (cosoa > cos(90 * (3.141592/180))) OPAngle_Loose_flag = kTRUE; //NO LOOSE CUT FOR OPENGING ANGLE
+		if (cosoa > cos(90 * (3.141592/180))) OPAngle_Stand_flag = kTRUE;
+		if (cosoa > cos(70 * (3.141592/180))) OPAngle_Tight_flag = kTRUE;
 
 		Bool_t PairMass_Loose_flag = kFALSE;
 		Bool_t PairMass_Stand_flag = kFALSE;
@@ -1663,6 +1694,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 
 	//*****************************************************
 
+	#if 1
 	TH1F* hMCTrueXic0 = new TH1F;
 	TH1F* hMCGenLevXic0_inc = new TH1F;
 	TH1F* hMCGenLevXic0_incW = new TH1F;
@@ -1712,19 +1744,21 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 		XibGen05 = (TH1F*)hist->FindObject("XibGen05")->Clone("XibGen05");
 
 		//! - not exist in old code?
-		/*eff_inc = (TH1F*)hinclu->Clone("eff_inc");
-		  eff_inc->Divide(eff_inc,hMCGenLevXic0_inc,1,1,"b");
+		/*
+		eff_inc = (TH1F*)hinclu->Clone("eff_inc");
+		eff_inc->Divide(eff_inc,hMCGenLevXic0_inc,1,1,"b");
 
-		  eff_inc_2 = (TH1F*)hinclu->Clone("eff_inc_2");
-		  eff_inc_2->Divide(eff_inc_2,hMCGenLevXic0_incW,1,1,"b");
+		eff_inc_2 = (TH1F*)hinclu->Clone("eff_inc_2");
+		eff_inc_2->Divide(eff_inc_2,hMCGenLevXic0_incW,1,1,"b");
 
-		  eff_p = (TH1F*)hMCGenLevXic01_p->Clone("eff_p");
-		  eff_p->Add(hMCGenLevXic02_p,1);
-		  eff_p->Divide(hprompt,eff_p,1,1,"b");
+		eff_p = (TH1F*)hMCGenLevXic01_p->Clone("eff_p");
+		eff_p->Add(hMCGenLevXic02_p,1);
+		eff_p->Divide(hprompt,eff_p,1,1,"b");
 
-		  eff_np = (TH1F*)hMCGenLevXic01_np->Clone("eff_np");
-		  eff_np->Add(hMCGenLevXic02_np,1);
-		  eff_np->Divide(hnonprompt,eff_np,1,1,"b");*/
+		eff_np = (TH1F*)hMCGenLevXic01_np->Clone("eff_np");
+		eff_np->Add(hMCGenLevXic02_np,1);
+		eff_np->Divide(hnonprompt,eff_np,1,1,"b");
+		*/
 
 		//kimc - what's the purpose?
 		TH1F* hPromptXic0 = (TH1F*)hMCGenLevXic01_p->Clone("hMCGenLevXic_p");
@@ -1739,7 +1773,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 
 	//*****************************************************
 
-	#if 1
 	TH1F *hXic0_Bayes_stand2 = (TH1F*) hMCRecoLevXic0_XiPID_stand->Clone("hXic0_Bayes_stand2");
 	TH1F *hXic0_Bayes_stand3 = (TH1F*) hMCRecoLevXic0_XiPID_stand->Clone("hXic0_Bayes_stand3");
 	TH1F *hXic0_Bayes_stand4 = (TH1F*) hMCRecoLevXic0_XiPID_stand->Clone("hXic0_Bayes_stand4");

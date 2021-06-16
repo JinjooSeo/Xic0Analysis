@@ -1,6 +1,8 @@
 #ifndef XI0CANAFUNCTION
 #define XI0CANAFUNCTION
 
+#include "AliNormalizationCounter.h"
+
 #include <TCanvas.h>
 #include <TChain.h>
 #include <TEfficiency.h>
@@ -119,6 +121,7 @@ TH1D* GetPreFilterCorrSpectrum(
 	return hMeas;
 }//GetPreFilterCorrSpectrum
 
+#if 0
 //--------------------------
 TH1D* GetBottomCorrSpectrum(
 		TFile* F_MC, TH1D* hCMSLb, TH1D* hMeas_orig, vector<float>pTvec,
@@ -185,6 +188,7 @@ TH1D* GetBottomCorrSpectrum(
 	hXibEff->Divide(hRecoXib, hGenXib, 1, 1, "b"); //Xib efficiency
 	h13TeVXibRaw->Multiply(hXibEff);
 
+	#if 1
 	TH1D* hRecoeXi = (TH1D*)F_MC->Get(Form("hMCRecoLevPairXib_%s_%s", Cut, CutFlag)); //Number of eXi from Xib
 	TH2D* hRM_Xib  = (TH2D*)F_MC->Get(Form("hRPM_%s_%s_Xib", Cut, CutFlag)); //Response matrix of Xib and eXi
 
@@ -273,7 +277,9 @@ TH1D* GetBottomCorrSpectrum(
 	}
 
 	return hMeas;
+	#endif
 }//GetBottomBayronCorrectedSpectrum
+#endif
 
 //kimc: get either weighted or unweighted by providing relevant ROOT file
 //-----------------------------------------------------------------------
@@ -294,7 +300,7 @@ TH1D* GetUnfoldedSpectrum(
 	TH2D* hRM_unfold = (TH2D*)F_MC->Get(Form("hRPM_%s_%s_un",        Cut, CutFlag));
 
 	RooUnfoldResponse Unfold(heXiPair, hXic0, hRM_unfold);
-	TH1D* hReco = new TH1D(Form("hReco_%s_%s", Cut, CutFlag), "", npTbins-1, pTbins);
+	TH1D* hReco = new TH1D(Form("hReco_%s_%s_%s", Cut, CutFlag, Suffix), "", npTbins-1, pTbins);
 	if ( !strcmp(Method, "Bayes") )
 	{
 		RooUnfoldBayes UFBayes(&Unfold, hMeas_temp, nIter);
@@ -375,10 +381,10 @@ TH1D* GetEfficiency(
 		const char* Suffix, bool Show = false
 		)
 {
-	//Feb. 3, 2021: binning is different btw denominator & numerator (d is shorter)
-	TH1D* hGen  = (TH1D*)F_MC->Get(Form("hMCGenLevXic0_inc%s", IsWeighted?"W":""));
+	TH1D* hGen  = (TH1D*)F_MC->Get(Form("hMCGenInclusiveXic0_%s", IsWeighted?"W":"woW"));
 	TH1D* hReco = (TH1D*)F_MC->Get(Form("hMCRecoLevXic0_%s_%s", Cut, CutFlag));
 
+	/*
 	const int npTbins = pTvec.size();
 	double pTbins[npTbins];	for (int i=0; i<npTbins; i++) pTbins[i] = pTvec[i];
 	TH1D* hEff_d = new TH1D(Form("hEffd_%s_%s", Cut, CutFlag), "", npTbins-1, pTbins);
@@ -395,6 +401,11 @@ TH1D* GetEfficiency(
 	TH1D* hEff = new TH1D("hEff", "", npTbins-1, pTbins); hEff->Sumw2();
 	hEff->SetName(Form("%s_hEff_%s_%s", Suffix, Cut, CutFlag));
 	hEff->Divide(hEff_n, hEff_d, 1, 1, "b");
+	*/
+
+	TH1D* hEff = (TH1D*)hGen->Clone("hEff"); hEff->Reset();
+	hEff->SetName(Form("%s_hEff_%s_%s", Suffix, Cut, CutFlag));
+	hEff->Divide(hReco, hGen, 1, 1, "b");
 
 	if (Show)
 	{
@@ -407,8 +418,9 @@ TH1D* GetEfficiency(
 		hEffTemp->SetStats(false);
 		hEffTemp->SetTitle(Form("Xic0 efficiency, %s;pT", Suffix));
 		hEffTemp->SetLineColor(1);
+		hEffTemp->SetMarkerColor(4);
 		hEffTemp->SetMarkerSize(1.4);
-		hEffTemp->DrawCopy("hist e text0");
+		hEffTemp->DrawCopy("hist e text60");
 
 		c1->Print(Form("%s.png", c1->GetName())); delete c1;
 		hEffTemp->Delete();
@@ -419,10 +431,9 @@ TH1D* GetEfficiency(
 	return hEff;
 }//GetEfficiency
 
-//----------------------------------------------------------------------------------------
-double GetNormFactor(TFile* F_data, const char* TRIG, const char* PERC, bool Show = false)
+//---------------------------------------------------------------------
+double GetNormFactor(TFile* F_data, const char* TRIG, const char* PERC)
 {
-	//TH2D* hNorm = (TH2D*)F_data->Get("hNorm_multSPD");
 	TH2D* hNorm = (TH2D*)F_data->Get("hNorm_multV0");
 
 	//Normalization histogram's y bins: all (0), kINT7 (1), kHMV0 (2), kHMSPD (3), and 'kHMV0 || kHMSPD' (4)
@@ -430,31 +441,48 @@ double GetNormFactor(TFile* F_data, const char* TRIG, const char* PERC, bool Sho
 	if      (!strcmp(TRIG, "MB"))    hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 2, 2);
 	else if (!strcmp(TRIG, "HMV0"))  hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 3, 3);
 	else if (!strcmp(TRIG, "HMSPD")) hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 4, 4);
-	else if (!strcmp(TRIG, "HMOR"))  hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 5, 5);
 
 	//Specify multiplicity range
 	float mult[2] = {0};
 
-	if      (!strcmp(PERC, "0.0to0.1"))    { mult[0] =  0.0; mult[1] =   0.1; }
-	else if (!strcmp(PERC, "0.0to1.0"))    { mult[0] =  0.0; mult[1] =   1.0; }
-	else if (!strcmp(PERC, "0.0to100.0"))  { mult[0] =  0.0; mult[1] = 100.0; }
-	else if (!strcmp(PERC, "0.1to30.0"))   { mult[0] =  0.1; mult[1] =  30.0; }
-	else if (!strcmp(PERC, "30.0to100.0")) { mult[0] = 30.0; mult[1] = 100.0; }
+	if      (!strcmp(PERC, "0to0p1"))  { mult[0] =  0.0; mult[1] =   0.1; }
+	else if (!strcmp(PERC, "0to100"))  { mult[0] =  0.0; mult[1] = 100.0; }
+	else if (!strcmp(PERC, "0p1to30")) { mult[0] =  0.1; mult[1] =  30.0; }
+	else if (!strcmp(PERC, "30to100")) { mult[0] = 30.0; mult[1] = 100.0; }
 	else { cout <<"Unknown PERC setup: returning 0 nomalization factor...\n"; return 0.; }
 
 	const int multBin1 = hNorm1D->GetXaxis()->FindBin(mult[0] + 1.e-4);
 	const int multBin2 = hNorm1D->GetXaxis()->FindBin(mult[1] - 1.e-4);
 	const double fNorm = hNorm1D->Integral(multBin1, multBin2);
 
-	if (Show)
-	{
-		cout <<Form("\nNomalization factor for %s_%s: [%2.1f, %2.1f] (Bins [%i, %i]): %10.9f x 1.e9",
-					TRIG, PERC, mult[0], mult[1], multBin1, multBin2, fNorm/1.e9) <<endl;
-	}
+	cout <<Form("\nNomalization factor for %s_%s: [%2.1f, %2.1f] (Bins [%i, %i]): %10.9f x 1.e9",
+			TRIG, PERC, mult[0], mult[1], multBin1, multBin2, fNorm/1.e9) <<endl;
 
 	hNorm1D->Delete();
 	return fNorm;
 }//GetNormFactor
+
+//-------------------------------------------------------------
+double GetNormFactorFromANC(const char* TRIG, const char* PERC)
+{
+	const char* F_orig = "./AnalysisResults_data.root";
+	const char* SDIR   = "PWG3_D2H_Xic02eXipp13TeV_HM";
+	cout <<Form("\nGetNormFactorFromANC - by using %s/%s/ANC_%s_%s", F_orig, SDIR, TRIG, PERC) <<endl;
+
+	//Check if original train output file exists
+	TFile* F = TFile::Open(F_orig);
+	if (!F || F->IsZombie()) { cout <<"Cannot find the original train output with ANC! Stop.\n"; return 0.; }
+
+	//Check if the counter exists
+	AliNormalizationCounter* ANC = (AliNormalizationCounter*)F->Get(Form("%s/ANC_%s_%s", SDIR, TRIG, PERC));
+	if (!ANC) {	cout <<Form("Cannot find the %s/ANC_%s_%s! Stop.\n", SDIR, TRIG, PERC);	return 0.; }
+
+	const double fNorm = ANC->GetNEventsForNorm();
+	cout <<Form("Normalization factor for %s_%s: %10.9f x 1.e9", TRIG, PERC, fNorm/1.e9) <<endl;
+
+	F->Close();
+	return fNorm;
+}//GetNormFactorANC
 
 //----------------
 TH1D* GetXSection(
@@ -480,6 +508,8 @@ TH1D* GetXSection(
 	TH1D* hXic0Xsec = new TH1D(Form("%s_hXsec", Suffix), ";pT", npTbins-1, pTbins);
 	for (int i=0; i<npTbins-1; i++)
 	{
+		if (i==0) continue; //Jun 7 (2021), skip 1st bin (too small statistics)
+
 		const double val = hXic0Yield->GetBinContent(i+1);
 		const double err = hXic0Yield->GetBinError(i+1); 
 
