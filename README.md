@@ -3,7 +3,39 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
-Update at June 16, 2021 (kimc)
+ July 7 (kimc)
+
+	- AliAnalysisTask...
+		a. 4 new AliNormalizationCounter objects are added to address INEL>0 separately
+		b. Moved "INEL>0" judge point before applying cuts (pileup, vertex < 10)
+		c. Not pushed to AliPhysics yet
+
+	- macro_kimc/Xic0AnaMakeRoot.C
+		a. Modified function arguments to use a script (Xi0cAnaRun.sh)
+		b. INEL>0 condition added for later use: currently disabled by default (conventional)
+		c. Modified pT weighting function for MC: "1" will be applied if given parameters are 1, otherwise "expo"
+		c. Unified all output histograms' binning
+		d. Removed SPD trigger related part (some may still linger)
+
+	- macro_kimc/Xic0AnaFunction.C : collection of functions to be used in the XS analysis
+		a. NOT finished yet
+		b. Prepared: get norm factor from ANC, prefilter eff corr, unfolding, Xic0 eff corr, XS, and pT weighting
+		c. No hard-corded parameters in each function: especially get pT binning from histogram
+
+	- macro_kimc/Xic0AnaExecute.C : steering macro for analysis
+	- macro_kimc/Xic0AnaRun.sh : script for overall analysis
+
+//-----------------------------------------------
+
+ June 23 (kimc)
+
+	- Added 4 new AliNormalizationCounter objects to account INEL>0 :
+		a. In code, fCntINEL0_MB_0to100, fCntINEL0_MB_0p1to30, fCntINEL0_MB_30to100, and fCntINEL0_HMV0_0to0p1
+		b. In Tree, ANCINEL0_MB_0to100, ANCINEL0_MB_0p1to30, ANCINEL0_MB_30to100, ANCINEL0_HMV0_0to0p1
+
+//-----------------------------------------------
+
+ June 16 (kimc)
 
 	- Recovering analysis chain (still ongoing)
 	- Xi0cAnaMakeRoot.C
@@ -15,7 +47,7 @@ Update at June 16, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Mar. 24, 2021 (kimc)
+ Mar. 24 (kimc)
 
 	- AliNormalizationCounter update
 		a. Moved "StoreEvent" invoking point:
@@ -24,7 +56,7 @@ Update at Mar. 24, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Mar. 8, 2021 (kimc)
+ Mar. 8 (kimc)
 
 	- Save a triggerbit for data only: for MC, 0 will be assigned
 	- Cleaned up some obsolete objects (items commented out, SPD histograms, etc)
@@ -44,7 +76,7 @@ Update at Mar. 8, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Feb. 10, 2021 (kimc)
+ Feb. 10 (kimc)
 
 	- Added analysis macros for final cross section estimation
 		a. Xi0cAnaMakeRoot.C (updated Xi topology cut after WDK)
@@ -53,7 +85,7 @@ Update at Feb. 10, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Jan. 25, 2021 (kimc)
+ Jan. 25, 2021 (kimc)
 
 	- Added 2nd production macro (Xic0AnaMakeRoot.C) for analysis
 		a. A few modifications compared to original, especially adding > 0 on several denominators
@@ -61,7 +93,7 @@ Update at Jan. 25, 2021 (kimc)
 
 //-----------------------------------------------
 
-Update at Dec. 18 (kimc)
+ Dec. 18 (kimc)
 
 	- Added TH2 histograms (fired trigger vs. mult) for nomalization purpose for data
 		a. Histograms:
@@ -76,7 +108,7 @@ Update at Dec. 18 (kimc)
 
 //-----------------------------------------------
 
-Updates at Oct. 8 (kimc)
+ Oct. 8 (kimc)
 
 	1. AliAnalysisTaskSEXi0c... is updated by Dr. Bok for compatability with pPb dataset
 		a. pp: Get multiplicity from V0M
@@ -89,7 +121,7 @@ Updates at Oct. 8 (kimc)
 
 //-----------------------------------------------
 
-Updates at Sep. 9 (kimc)
+ Sep. 9 (kimc)
 
 	1. Enforced EventTree sync to eXiTree
 		a. EventTree is filled only if eXiTree is filled
@@ -103,7 +135,7 @@ Updates at Sep. 9 (kimc)
 
 //-----------------------------------------------
 
-Updates at Aug. 28 (kimc):
+ Aug. 28 (kimc):
 
 	1. Added high multiplicity triggers feature
 		a. Total 3 triggers (kINT7, kHighMultV0, and kHighMultSPD) can be toggled on/off in steering macro

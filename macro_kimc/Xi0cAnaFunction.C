@@ -3,11 +3,13 @@
 
 #include "AliNormalizationCounter.h"
 
+#include <TBox.h>
 #include <TCanvas.h>
 #include <TChain.h>
 #include <TEfficiency.h>
 #include <TF1.h>
 #include <TFile.h>
+#include <TGraphAsymmErrors.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TKey.h>
@@ -30,517 +32,424 @@
 #include <map>
 using namespace std;
 
-//-------------------------------------------------
-TH1D* GetCMSLbSpectrum(TFile* F, bool Show = false)
+//Get normalization factor via AliNormalizationCounter: require original train output
+//-------------------------------------------------------------------------------------------------
+double GetNormFactor(const char* inFile, const char* TRIG, const char* PERC, bool INELLgt0 = false)
 {
-	TDirectoryFile* sDIR = (TDirectoryFile*)F->Get("Table 2");
-	TH1D* hCMSLb_val = (TH1D*)sDIR->Get("Hist1D_y1");
-	TH1D* hCMSLb_err = (TH1D*)sDIR->Get("Hist1D_y1_e1");
-	hCMSLb_val->Scale(0.001/4);
-	hCMSLb_err->Scale(0.001/4);
-
-	TH1D* hCMSLb = (TH1D*)hCMSLb_val->Clone("CMSLambda_b");
-	for (int a=0; a<hCMSLb->GetNbinsX(); a++) hCMSLb->SetBinError(a+1, hCMSLb_err->GetBinContent(a+1));	
-
-	//Draw
-	if (Show)
-	{
-		gStyle->SetPaintTextFormat("4.3f");
-		TCanvas* c1 = new TCanvas("c1y_CMSLb", "", 1600/2, 900/2); c1->cd()->SetGrid();
-		TH1D* hCMSLb_temp = (TH1D*)hCMSLb->Clone();
-		hCMSLb_temp->SetLineColor(1);
-		hCMSLb_temp->SetMarkerSize(1.4);
-		hCMSLb_temp->GetYaxis()->SetRangeUser(-0.01, hCMSLb_temp->GetMaximum()*1.2);
-		hCMSLb_temp->SetTitle("CMS lambda_b");
-		hCMSLb_temp->DrawCopy("hist e text0");
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-	}
-
-	hCMSLb_val->Delete();
-	hCMSLb_err->Delete();
-	return hCMSLb;
-}//GetCMSLbSpectrum
-
-//-----------------------------
-TH1D* GetPreFilterCorrSpectrum(
-		TFile* F_data, const char* Cut, const char* CutFlag, const char* Suffix = "", bool Show = false
-		)
-{
-	//Get prefilter efficiency
-	TH1D* preF_eff_n = (TH1D*)F_data->Get(Form("hpre_%s_%s_nu", Cut, CutFlag)); //Numerator
-	TH1D* preF_eff_d = (TH1D*)F_data->Get(Form("hpre_%s_%s_de", Cut, CutFlag)); //Denominator
-
-	TH1D* preF_eff = (TH1D*)preF_eff_d->Clone(Form("hpreff_%s_%s", Cut, CutFlag)); preF_eff->Reset();
-	preF_eff->Divide(preF_eff_n, preF_eff_d, 1, 1, "b"); //1, 1, b: Weighting on n/d and compute binomial error
-
-	//Return histogram: apply prefilter efficiency on measured yields
-	TH1D* hMeas = (TH1D*)F_data->Get(Form("hRawPt_%s_%s", Cut, CutFlag))->Clone();
-	hMeas->SetName(Form("%s_%s_preFCorr", Suffix, hMeas->GetName()));
-	hMeas->Divide(preF_eff);
-
-	if (Show)
-	{
-		gStyle->SetOptStat(0);
-		TCanvas* c1 = new TCanvas("c1", "", 1600, 900/2);
-		c1->SetName(Form("c1a_preFCorr_%s_%s_%s", Cut, CutFlag, Suffix));
-		c1->Divide(2, 1);
-
-		c1->cd(1)->SetGrid();
-		preF_eff->SetLineColor(1);
-		preF_eff->SetMarkerColor(4);
-		preF_eff->SetMarkerSize(1.4);
-		preF_eff->GetYaxis()->SetRangeUser(0.9, 1.1);
-		preF_eff->SetTitle(Form("%s, prefilter eff;pT;#epsilon", Suffix));
-		preF_eff->DrawCopy("hist e text45");
-
-		c1->cd(2)->SetGrid();
-		TH1D* hMeas_orig = (TH1D*)F_data->Get(Form("hRawPt_%s_%s", Cut, CutFlag))->Clone();
-		hMeas_orig->SetLineColor(1);
-		hMeas_orig->SetMarkerColor(1);
-		hMeas_orig->SetMarkerStyle(20);
-		hMeas_orig->SetTitle(Form("%s, Raw yields;pT", Suffix));
-		hMeas_orig->DrawCopy("hist e");
-		TH1D* hMeas_temp = (TH1D*)hMeas->Clone(Form("%s_copy", hMeas->GetName()));
-		hMeas_temp->SetLineColor(2);
-		hMeas_temp->SetMarkerColor(2);
-		hMeas_temp->SetMarkerStyle(24);
-		hMeas_temp->DrawCopy("hist e same");
-		TLegend* Leg = new TLegend(0.50, 0.65, 0.75, 0.85);
-		Leg->AddEntry(hMeas_orig, "w/o preFilter corr", "lp");
-		Leg->AddEntry(hMeas_temp, "w/ preFilter corr", "lp");
-		Leg->Draw("same");
-
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-		hMeas_orig->Delete();
-		hMeas_temp->Delete();
-	}
-
-	preF_eff_n->Delete();
-	preF_eff_d->Delete();
-	preF_eff->Delete();
-	return hMeas;
-}//GetPreFilterCorrSpectrum
-
-#if 0
-//--------------------------
-TH1D* GetBottomCorrSpectrum(
-		TFile* F_MC, TH1D* hCMSLb, TH1D* hMeas_orig, vector<float>pTvec,
-		const char* Cut, const char* CutFlag, const char* Suffix = "", bool Show = false
-		)
-{
-	//Constants
-	const double BC_ScaleFactor[9] =
-	{
-		1.53313, 1.69604, 1.806626, 1.887637, 1.950308, 2.018669, 2.121922, 2.249672, 2.439034
-	};
-	const double BE_ScaleFactor[9] =
-	{
-		0.002688548, 0.003208365, 0.004097259, 0.005324936, 0.006890631,
-		0.009749647, 0.01760265,  0.03540223,  0.06652629
-	};
-	const double BRFraction = (3.9 * 10e-4) / (5.8 * 10e-5);
-	const double Luminosity = 1.88554e+09/(57.8*1000000); //pp 13 TeV integrated luminosity
-
-	const int npTbins = pTvec.size();
-	double pTbins[npTbins];	for (int i=0; i<npTbins; i++) pTbins[i] = pTvec[i];
-
-	//+++++++++++++++++++++++++++++++++++++++++++
-
-	//1) Fit 7TeV CMS Lb spectrum with Tasllis function
-	cout <<"\n GetBottomCorrSpectrum:: perform fit..." <<endl;
-	TF1 *fTsallis = new TF1("Lambdab", "[0]*x*(pow(1+(sqrt(pow(x,2)+pow(5.619,2))-5.619)/(7.6*1.1),-7.6))", 0, 50);
-	hCMSLb->Fit("Lambdab", "0");
-	fTsallis->SetParameters(fTsallis->GetParameters());
-	cout <<endl;
-
-	//2) Multiply scale factor, to convert 7 TeV Lb to 13TeV Lb
-	TH1D* hScaleFactor = new TH1D("hScaleFactor", "", 9, pTbins); //B meson ratio -> B(13TeV)/B(7TeV)
-	for (int i=0; i<9; i++)
-	{
-		hScaleFactor->SetBinContent(i+1, BC_ScaleFactor[i]);
-		hScaleFactor->SetBinError  (i+1, BE_ScaleFactor[i]);
-	}
-	TH1D* h13TeVLb = new TH1D("h13TeVLb", "", 9, pTbins);
-	for (int i=0; i<9; i++)
-	{
-		const double tempLbVal = fTsallis->Eval( h13TeVLb->GetBinCenter(i+1) ) * hScaleFactor->GetBinContent(i+1);
-		h13TeVLb->SetBinContent(i+1, tempLbVal); //Error is not assigned since we don't know the error at 1 to 10 pT
-	}
-
-	//3) Multiply Branching ratio fraction to convert to Xib
-	TH1D* h13TeVXib = (TH1D*)h13TeVLb->Clone("h13TeVXib");
-	h13TeVXib->Scale(BRFraction);
-
-	//4) Calculate Xib yield
-	TH1D* h13TeVXibRaw = new TH1D("h13TeVXibRaw","", 9, pTbins);
-	for( int i=0; i<9; i++)
-	{
-		const double pTbinW = pTbins[i+1] - pTbins[i];
-		const double tempXibVal = h13TeVXib->GetBinContent(i+1) * pTbinW*2 * Luminosity; //x2? //kimc
-		h13TeVXibRaw->SetBinContent(i+1, tempXibVal);
-	}
-
-	//+++++++++++++++++++++++++++++++++++++++++++
-
-	TH1D* hGenXib  = (TH1D*)F_MC->Get("XibGen05"); //Number of Xib in generation level
-	TH1D* hRecoXib = (TH1D*)F_MC->Get(Form("hMCRecoLevXib_%s_%s", Cut, CutFlag)); //Number of Xib in reco lv
-	TH1D* hXibEff  = (TH1D*)hRecoXib->Clone(Form("hXibEff_%s_%s", Cut, CutFlag)); hXibEff->Reset();
-	hXibEff->Divide(hRecoXib, hGenXib, 1, 1, "b"); //Xib efficiency
-	h13TeVXibRaw->Multiply(hXibEff);
-
-	#if 1
-	TH1D* hRecoeXi = (TH1D*)F_MC->Get(Form("hMCRecoLevPairXib_%s_%s", Cut, CutFlag)); //Number of eXi from Xib
-	TH2D* hRM_Xib  = (TH2D*)F_MC->Get(Form("hRPM_%s_%s_Xib", Cut, CutFlag)); //Response matrix of Xib and eXi
-
-	//5) Convert Xib spectrum to eXi spectrum
-	RooUnfoldResponse Response(hRecoXib, hRecoeXi, hRM_Xib);
-	RooUnfoldBinByBin Unfolding(&Response, h13TeVXibRaw);
-	TH1D* heXiFromXib = (TH1D*)Unfolding.Hreco();
-
-	//6) Return histogram: add eXi from Xib to eXi pair(RS - WS)
-	TH1D* hMeas = (TH1D*)hMeas_orig->Clone(Form("%s_BCorr", hMeas_orig->GetName()));
-	hMeas->Add(heXiFromXib);
-
-	//+++++++++++++++++++++++++++++++++++++++++++
-	
-	if (Show)
-	{
-		TCanvas* c1 = new TCanvas("c1", "", 1600, 900);
-		c1->SetName(Form("c1b_XibCorr_%s_%s_%s", Cut, CutFlag, Suffix));
-		c1->Divide(2, 2);
-
-		c1->cd(1)->SetGrid();
-		hXibEff->SetLineColor(1);
-		hXibEff->SetMarkerColor(4);
-		hXibEff->SetMarkerSize(1.3);
-		hXibEff->SetMinimum(0.);
-		hXibEff->SetTitle(Form("%s, Xib eff;pT", Suffix));
-		hXibEff->DrawCopy("hist e text0");
-
-		c1->cd(2)->SetGrid();
-		hRM_Xib->SetStats(false);
-		hRM_Xib->SetTitle(Form("%s, eXi-Xib RM;pT (Xib);pT (eXi)", Suffix));
-		hRM_Xib->SetMarkerColor(2);
-		hRM_Xib->SetMarkerSize(1.4);
-		hRM_Xib->DrawCopy("colz text45");
-
-		c1->cd(3)->SetGrid();
-		heXiFromXib->SetStats(false);
-		heXiFromXib->SetLineColor(2);
-		heXiFromXib->SetMarkerColor(2);
-		heXiFromXib->SetMarkerStyle(24);
-		heXiFromXib->SetTitle(Form("%s, eXi from Xib;pT", Suffix));
-		heXiFromXib->DrawCopy("hist e");
-		h13TeVXibRaw->SetLineColor(1);
-		h13TeVXibRaw->SetMarkerColor(1);
-		h13TeVXibRaw->SetMarkerStyle(20);
-		h13TeVXibRaw->DrawCopy("hist e same");
-		TLegend* Leg1 = new TLegend(0.5, 0.65, 0.75, 0.85);
-		Leg1->AddEntry(heXiFromXib, "eXi from Xib", "lp");
-		Leg1->AddEntry(h13TeVXibRaw, "Xib raw", "lp");
-		Leg1->Draw("same");
-
-		c1->cd(4)->SetGrid();
-		TH1D* hMeas_orig_temp = (TH1D*)hMeas_orig->Clone(Form("%s_temp", hMeas_orig->GetName()));
-		hMeas_orig_temp->SetTitle(Form("%s, eXi yields w/ or w/o Xib corr;pT", Suffix));
-		hMeas_orig_temp->SetLineColor(1);
-		hMeas_orig_temp->SetMarkerColor(1);
-		hMeas_orig_temp->SetMarkerStyle(20);
-		hMeas_orig_temp->DrawCopy("hist e");
-		TH1D* hMeas_temp = (TH1D*)hMeas->Clone(Form("%s_temp", hMeas->GetName()));
-		hMeas_temp->SetLineColor(2);
-		hMeas_temp->SetMarkerColor(2);
-		hMeas_temp->SetMarkerStyle(24);
-		hMeas_temp->DrawCopy("hist e same");
-		TLegend* Leg2 = new TLegend(0.50, 0.65, 0.75, 0.85);
-		Leg2->AddEntry(hMeas_temp, "Corrected", "lp");
-		Leg2->AddEntry(hMeas_orig_temp, "NOT corrected", "lp");
-		Leg2->Draw("same");
-
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-		hMeas_orig_temp->Delete();
-		hMeas_temp->Delete();
-	}
-	else
-	{
-		fTsallis    ->Delete();
-		hScaleFactor->Delete();
-		h13TeVLb    ->Delete();
-		h13TeVXib   ->Delete();
-		h13TeVXibRaw->Delete();
-		hGenXib     ->Delete();
-		hRecoXib    ->Delete();
-		hXibEff     ->Delete();
-		hRecoeXi    ->Delete();
-		hRM_Xib     ->Delete();
-		heXiFromXib ->Delete();
-	}
-
-	return hMeas;
-	#endif
-}//GetBottomBayronCorrectedSpectrum
-#endif
-
-//kimc: get either weighted or unweighted by providing relevant ROOT file
-//-----------------------------------------------------------------------
-TH1D* GetUnfoldedSpectrum(
-		TFile* F_MC, TH1D* hMeas, vector<float>pTvec,
-		const char* Cut, const char* CutFlag, const char* Method, const int nIter,
-		const char* Suffix, bool Show = false
-		)
-{
-	cout <<Form("GetUnfoldedSpectrum:: by using %s and method %s...", F_MC->GetName(), Method) <<endl;
-	TH1D* hMeas_temp = (TH1D*)hMeas->Clone(Form("%s_temp", hMeas->GetName()));
-
-	const int npTbins = pTvec.size();
-	double pTbins[npTbins];	for (int i=0; i<npTbins; i++) pTbins[i] = pTvec[i];
-
-	TH1D* heXiPair   = (TH1D*)F_MC->Get(Form("hMCRecoLevPair_%s_%s", Cut, CutFlag));
-	TH1D* hXic0      = (TH1D*)F_MC->Get(Form("hMCRecoLevXic0_%s_%s", Cut, CutFlag));
-	TH2D* hRM_unfold = (TH2D*)F_MC->Get(Form("hRPM_%s_%s_un",        Cut, CutFlag));
-
-	RooUnfoldResponse Unfold(heXiPair, hXic0, hRM_unfold);
-	TH1D* hReco = new TH1D(Form("hReco_%s_%s_%s", Cut, CutFlag, Suffix), "", npTbins-1, pTbins);
-	if ( !strcmp(Method, "Bayes") )
-	{
-		RooUnfoldBayes UFBayes(&Unfold, hMeas_temp, nIter);
-		hReco = (TH1D*)UFBayes.Hreco();
-	}
-	else if ( !strcmp(Method, "Svd") )
-	{
-		RooUnfoldSvd UFSvd(&Unfold, hMeas_temp, nIter);
-		hReco = (TH1D*)UFSvd.Hreco();
-
-		TSVDUnfold_local* UFSvdLoc = (TSVDUnfold_local*)UFSvd.Impl();
-		TH1D* fDHist = UFSvdLoc->GetD();
-		for (int i=0; i<fDHist->GetNbinsX(); i++) cout <<Form("%2i: %f", i, fDHist->GetBinContent(i+1)) <<endl;
-	}
-	else
-	{
-		cout <<"Unknown method! Stop.\n";
-		hReco->Reset();
-		return hReco;
-	}
-
-	//Return histogram
-	TH1D* hUnfolded = new TH1D("hUnfolded_%s_%s", "", npTbins-1, pTbins);
-	hUnfolded->SetName(Form("%s_unfolded", hMeas->GetName()));
-	for (int i=0; i<npTbins; i++)
-	{
-		hUnfolded->SetBinContent(i+1, hReco->GetBinContent(i+1));
-		hUnfolded->SetBinError  (i+1, hReco->GetBinError  (i+1));
-	}
-
-	if (Show)
-	{
-		TCanvas* c1 = new TCanvas("c1", "", 1600, 900/2);
-		c1->SetName(Form("c1c_unfold_%s_%s_%s", Cut, CutFlag, Suffix));
-		c1->Divide(2, 1);
-		
-		c1->cd(1)->SetGrid();
-		hRM_unfold->SetTitle(Form("%s, eXi-Xic0 RM;pT (eXi);pT (Xic0)", Suffix));
-		hRM_unfold->SetMarkerColor(2);
-		hRM_unfold->SetMarkerSize(1.2);
-		hRM_unfold->SetStats(false);
-		hRM_unfold->DrawCopy("colz text45");
-
-		c1->cd(2)->SetGrid();
-		hMeas_temp->SetLineColor(1);
-		hMeas_temp->SetMarkerColor(1);
-		hMeas_temp->SetMarkerStyle(20);
-		hMeas_temp->SetTitle(Form("%s, before/after unfolding;pT", hMeas->GetName()));
-		hMeas_temp->DrawCopy("hist e");
-		TH1D* hUnfold_temp = (TH1D*)hUnfolded->Clone(Form("%s_temp", hUnfolded->GetName()));
-		hUnfold_temp->SetLineColor(2);
-		hUnfold_temp->SetMarkerColor(2);
-		hUnfold_temp->SetMarkerStyle(24);
-		hUnfold_temp->DrawCopy("hist e same");
-		TLegend* Leg = new TLegend(0.5, 0.65, 0.75, 0.85);
-		Leg->AddEntry(hMeas_temp, "Before (original)", "lp");
-		Leg->AddEntry(hUnfold_temp, "After (unfolded)", "lp");
-		Leg->Draw("same");
-		
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-		hUnfold_temp->Delete();
-	}
-
-	hMeas_temp->Delete();
-	heXiPair  ->Delete();
-	hXic0     ->Delete();
-	hRM_unfold->Delete();
-	hReco     ->Delete();
-
-	return hUnfolded;
-}//GetUnfoldedSpectrum
-
-//kimc: get either weighted or unweighted by providing relevant ROOT file
-//-----------------------------------------------------------------------
-TH1D* GetEfficiency(
-		TFile* F_MC, vector<float>pTvec,
-		const char* Cut, const char* CutFlag, bool IsWeighted,
-		const char* Suffix, bool Show = false
-		)
-{
-	TH1D* hGen  = (TH1D*)F_MC->Get(Form("hMCGenInclusiveXic0_%s", IsWeighted?"W":"woW"));
-	TH1D* hReco = (TH1D*)F_MC->Get(Form("hMCRecoLevXic0_%s_%s", Cut, CutFlag));
-
-	/*
-	const int npTbins = pTvec.size();
-	double pTbins[npTbins];	for (int i=0; i<npTbins; i++) pTbins[i] = pTvec[i];
-	TH1D* hEff_d = new TH1D(Form("hEffd_%s_%s", Cut, CutFlag), "", npTbins-1, pTbins);
-	TH1D* hEff_n = new TH1D(Form("hEffn_%s_%s", Cut, CutFlag), "", npTbins-1, pTbins);
-	for (int i=0; i<npTbins; i++)
-	{
-		if (i>hGen->GetNbinsX() || i>hReco->GetNbinsX()) continue;
-		hEff_d->SetBinContent(i+1, hGen ->GetBinContent(i+1));
-		hEff_n->SetBinContent(i+1, hReco->GetBinContent(i+1));
-		hEff_d->SetBinError(i+1, hGen ->GetBinError(i+1));
-		hEff_n->SetBinError(i+1, hReco->GetBinError(i+1));
-	}
-
-	TH1D* hEff = new TH1D("hEff", "", npTbins-1, pTbins); hEff->Sumw2();
-	hEff->SetName(Form("%s_hEff_%s_%s", Suffix, Cut, CutFlag));
-	hEff->Divide(hEff_n, hEff_d, 1, 1, "b");
-	*/
-
-	TH1D* hEff = (TH1D*)hGen->Clone("hEff"); hEff->Reset();
-	hEff->SetName(Form("%s_hEff_%s_%s", Suffix, Cut, CutFlag));
-	hEff->Divide(hReco, hGen, 1, 1, "b");
-
-	if (Show)
-	{
-		TCanvas* c1 = new TCanvas("c1", "", 1600/2, 900/2);
-		c1->SetName(Form("c1d_eff_%s_%s_%s", Cut, CutFlag, Suffix)); c1->cd()->SetGrid();
-
-		TH1D* hEffTemp = (TH1D*)hEff->Clone(Form("%s_temp", hEff->GetName()));
-		if (hEffTemp->GetMaximum()*1.1 < 0.1) hEffTemp->GetYaxis()->SetRangeUser(0, hEffTemp->GetMaximum()*1.1);
-		else hEffTemp->GetYaxis()->SetRangeUser(0, 0.15);
-		hEffTemp->SetStats(false);
-		hEffTemp->SetTitle(Form("Xic0 efficiency, %s;pT", Suffix));
-		hEffTemp->SetLineColor(1);
-		hEffTemp->SetMarkerColor(4);
-		hEffTemp->SetMarkerSize(1.4);
-		hEffTemp->DrawCopy("hist e text60");
-
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-		hEffTemp->Delete();
-	}
-
-	hGen ->Delete();
-	hReco->Delete();
-	return hEff;
-}//GetEfficiency
-
-//---------------------------------------------------------------------
-double GetNormFactor(TFile* F_data, const char* TRIG, const char* PERC)
-{
-	TH2D* hNorm = (TH2D*)F_data->Get("hNorm_multV0");
-
-	//Normalization histogram's y bins: all (0), kINT7 (1), kHMV0 (2), kHMSPD (3), and 'kHMV0 || kHMSPD' (4)
-	TH1D* hNorm1D = new TH1D(); //Extract multiplicity info of specific trigger
-	if      (!strcmp(TRIG, "MB"))    hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 2, 2);
-	else if (!strcmp(TRIG, "HMV0"))  hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 3, 3);
-	else if (!strcmp(TRIG, "HMSPD")) hNorm1D = (TH1D*)hNorm->ProjectionX(Form("hNorm1D_%s", TRIG), 4, 4);
-
-	//Specify multiplicity range
-	float mult[2] = {0};
-
-	if      (!strcmp(PERC, "0to0p1"))  { mult[0] =  0.0; mult[1] =   0.1; }
-	else if (!strcmp(PERC, "0to100"))  { mult[0] =  0.0; mult[1] = 100.0; }
-	else if (!strcmp(PERC, "0p1to30")) { mult[0] =  0.1; mult[1] =  30.0; }
-	else if (!strcmp(PERC, "30to100")) { mult[0] = 30.0; mult[1] = 100.0; }
-	else { cout <<"Unknown PERC setup: returning 0 nomalization factor...\n"; return 0.; }
-
-	const int multBin1 = hNorm1D->GetXaxis()->FindBin(mult[0] + 1.e-4);
-	const int multBin2 = hNorm1D->GetXaxis()->FindBin(mult[1] - 1.e-4);
-	const double fNorm = hNorm1D->Integral(multBin1, multBin2);
-
-	cout <<Form("\nNomalization factor for %s_%s: [%2.1f, %2.1f] (Bins [%i, %i]): %10.9f x 1.e9",
-			TRIG, PERC, mult[0], mult[1], multBin1, multBin2, fNorm/1.e9) <<endl;
-
-	hNorm1D->Delete();
-	return fNorm;
-}//GetNormFactor
-
-//-------------------------------------------------------------
-double GetNormFactorFromANC(const char* TRIG, const char* PERC)
-{
-	const char* F_orig = "./AnalysisResults_data.root";
-	const char* SDIR   = "PWG3_D2H_Xic02eXipp13TeV_HM";
-	cout <<Form("\nGetNormFactorFromANC - by using %s/%s/ANC_%s_%s", F_orig, SDIR, TRIG, PERC) <<endl;
-
 	//Check if original train output file exists
-	TFile* F = TFile::Open(F_orig);
-	if (!F || F->IsZombie()) { cout <<"Cannot find the original train output with ANC! Stop.\n"; return 0.; }
+	TFile* F = TFile::Open(inFile);
+	if (!F || F->IsZombie()) { cout <<Form("Cannot find file %s! Stop.\n", inFile); assert(false); }
 
 	//Check if the counter exists
-	AliNormalizationCounter* ANC = (AliNormalizationCounter*)F->Get(Form("%s/ANC_%s_%s", SDIR, TRIG, PERC));
-	if (!ANC) {	cout <<Form("Cannot find the %s/ANC_%s_%s! Stop.\n", SDIR, TRIG, PERC);	return 0.; }
+	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM";
+	const char* ANC_name = Form("ANC%s_%s_%s", INELLgt0?"INEL0":"", TRIG, PERC);
+	AliNormalizationCounter* ANC = (AliNormalizationCounter*)F->Get(Form("%s/%s", SDIR, ANC_name));
+	if (!ANC) {	cout <<Form("Cannot find ANC object %s/%s! Stop.\n", SDIR, ANC_name); assert(false); }
 
 	const double fNorm = ANC->GetNEventsForNorm();
-	cout <<Form("Normalization factor for %s_%s: %10.9f x 1.e9", TRIG, PERC, fNorm/1.e9) <<endl;
+	cout <<Form("Normalization factor for %s_%s: %10.9f x 1.e9\n", TRIG, PERC, fNorm/1.e9);
 
 	F->Close();
 	return fNorm;
 }//GetNormFactorANC
 
-//----------------
-TH1D* GetXSection(
-		TH1D* hRawXic0, TH1D* hEff, vector<float> pTvec, const double normF,
-		const char* Suffix,	bool Show = false
+//----------------------
+TH1D* ApplyPreFilterEff(
+		TH1D* H1, TFile* F_data,
+		const char* Cut, const char* CutFlag,
+		const char* Suffix, bool Show = false
 		)
 {
-	const double BR      = 0.018; //Xic0 -> eXi: 1.8 +- 1.2 (%)
-	const double DeltaY  = 1.0;
-	const double V0ANDcs = 57.8 * 1000; //V0AND xSec @ 13 TeV: 57.8 mb +- 2.2 (%)
-	const double IntL    = normF/V0ANDcs;
+	//Get prefilter efficiency
+	TH1D* preF_eff_n = (TH1D*)F_data->Get(Form("hpre_%s_%s_nu", Cut, CutFlag)); //Numerator
+	TH1D* preF_eff_d = (TH1D*)F_data->Get(Form("hpre_%s_%s_de", Cut, CutFlag)); //Denominator
+	TH1D* preF_eff = (TH1D*)preF_eff_n->Clone(Form("hPreFEff_%s_%s", Cut, CutFlag)); preF_eff->Reset();
+	preF_eff->Divide(preF_eff_n, preF_eff_d, 1, 1, "b"); //1, 1, b: Weighting on n/d and compute binomial error
 
-	const int npTbins = pTvec.size();
-	double pTbins[npTbins];	for (int i=0; i<npTbins; i++) pTbins[i] = pTvec[i];
+	//Process return histogram: apply prefilter efficiency on raw yields
+	TH1D* H1R = (TH1D*)H1->Clone(Form("%s_%s_preFCorr", H1->GetName(), Suffix));
+	H1R->Divide(preF_eff);
 
 	//+++++++++++++++++++++++++++++++++++++++++++
-	
-	//Efficiency corrected total yields
-	TH1D* hXic0Yield = (TH1D*)hRawXic0->Clone(Form("%s_yield", hRawXic0->GetName())); hXic0Yield->Reset();
-	hXic0Yield->Divide(hRawXic0, hEff);
 
-	//Return histogram
-	TH1D* hXic0Xsec = new TH1D(Form("%s_hXsec", Suffix), ";pT", npTbins-1, pTbins);
-	for (int i=0; i<npTbins-1; i++)
-	{
-		if (i==0) continue; //Jun 7 (2021), skip 1st bin (too small statistics)
-
-		const double val = hXic0Yield->GetBinContent(i+1);
-		const double err = hXic0Yield->GetBinError(i+1); 
-
-		const double pTbinW = pTbins[i+1] - pTbins[i];
-		const double xSecF  = 2 * pTbinW * DeltaY * IntL * BR;
-
-		hXic0Xsec->SetBinContent(i+1, val/xSecF);
-		hXic0Xsec->SetBinError  (i+1, err/xSecF);
-		//cout <<i <<" " <<val <<" " <<err <<" " <<xSecF <<" " <<val/xSecF <<" " <<err/xSecF <<endl;
-	}
-
+	//Draw
 	if (Show)
 	{
 		gStyle->SetOptStat(0);
-		gStyle->SetPaintTextFormat("4.3f");
+	    gStyle->SetPaintTextFormat("4.3f");
+		TCanvas* c1 = new TCanvas("c1", "", 1600, 900/2);
+		c1->SetName(Form("c1a_%s_%s_%s_preFCorr", Suffix, Cut, CutFlag));
+		c1->Divide(2, 1);
 
-		TCanvas* c1 = new TCanvas("c1", "", 1600/2, 900/2);
-		c1->SetName(Form("c1e_xSec_%s", Suffix));
-		gPad->SetGrid();
-		gPad->SetLogy();
+		c1->cd(1);//->SetGrid();
+		preF_eff->GetYaxis()->SetRangeUser(preF_eff->GetMinimum()-0.03, preF_eff->GetMaximum()+0.03);
+		preF_eff->SetLineColor(1);
+		preF_eff->SetMarkerColor(2);
+		preF_eff->SetMarkerSize(1.4);
+		preF_eff->SetTitle(Form("%s, prefilter eff;pT;#epsilon", Suffix));
+		preF_eff->DrawCopy("hist e text45");
 
-		TH1D* hXsecTemp = (TH1D*)hXic0Xsec->Clone();
-		hXsecTemp->SetTitle(Form("Xsec_%s;pT", Suffix));
-		hXsecTemp->GetYaxis()->SetRangeUser(5.e-3, 5.e2);
-		hXsecTemp->DrawCopy("hist e text0");
+		c1->cd(2)->SetGridy();
+		TLegend* L1 = new TLegend(0.50, 0.65, 0.80, 0.85);
+		for (int a=0; a<2; a++)
+		{
+			TH1D* H1Temp;
+			if (a==0) H1Temp = (TH1D*)H1 ->Clone(Form("%s_showA", H1 ->GetName()));
+			if (a==1) H1Temp = (TH1D*)H1R->Clone(Form("%s_showA", H1R->GetName()));
 
-		c1->Print(Form("%s.png", c1->GetName())); delete c1;
-		hXsecTemp->Delete();
+			H1Temp->SetLineColor(a+1);
+			H1Temp->SetMarkerColor(a+1);
+			H1Temp->SetMarkerStyle(20 + a*4);
+			if (a==0) H1Temp->SetTitle(Form("%s, preFilter eff correction;pT", Suffix));
+			H1Temp->DrawCopy(a==0?"hist e":"hist e same");
+			L1->AddEntry(H1Temp, a==0?"Raw":"Raw / preFilter eff", "lp");
+		}
+		L1->Draw();
+
+		c1->Print(Form("%s.png", c1->GetName()));
+	}//Show
+
+	preF_eff_n->Delete();
+	preF_eff_d->Delete();
+	preF_eff->Delete();
+	return H1R;
+}//ApplyPreFilterEff
+
+//-------------------
+TH1D* ApplyUnfolding(
+		TH1D* H1, TFile* F_MC,
+		const char* Cut, const char* CutFlag, const char* UFMethod, const int nIter,
+		const char* Suffix, bool Show = false
+		)
+{
+	if (Show) cout <<Form("Perform unfolding by using '%s' + '%s'... ", F_MC->GetName(), UFMethod);
+
+	//Prepare input for unfolding
+	TH1D* heXiPair   = (TH1D*)F_MC->Get(Form("hMCRecoLevPair_%s_%s", Cut, CutFlag));
+	TH1D* hXic0      = (TH1D*)F_MC->Get(Form("hMCRecoLevXic0_%s_%s", Cut, CutFlag));
+	TH2D* hRM_unfold = (TH2D*)F_MC->Get(Form("hRPM_%s_%s_un",        Cut, CutFlag));
+
+	//Perform unfolding
+    RooUnfoldResponse UFResponse(heXiPair, hXic0, hRM_unfold);
+	TH1D* hReco = (TH1D*)hXic0->Clone(Form("hReco_%s_%s_%s", Cut, CutFlag, Suffix));
+	hReco->Reset();
+
+	if (!strcmp(UFMethod, "Bayes"))
+	{
+		TH1D* H1Temp = (TH1D*)H1->Clone(Form("%s_temp", H1->GetName()));
+		RooUnfoldBayes UFBayes(&UFResponse, H1Temp, nIter);
+		hReco = (TH1D*)UFBayes.Hreco();
+		H1Temp->Delete();
+	}
+	else if (!strcmp(UFMethod, "Svd"))
+	{
+		cout <<endl;
+		TH1D* H1Temp = (TH1D*)H1->Clone(Form("%s_temp", H1->GetName()));
+		RooUnfoldSvd UFSvd(&UFResponse, H1Temp, nIter);
+		hReco = (TH1D*)UFSvd.Hreco();
+		H1Temp->Delete();
+	
+		if (Show)
+		{
+			TSVDUnfold_local* UFSvdLoc = (TSVDUnfold_local*)UFSvd.Impl();
+			TH1D* fDHist = UFSvdLoc->GetD();
+			for (int a=0; a<fDHist->GetNbinsX(); a++) cout <<Form("Bin %i: %f\n", a+1, fDHist->GetBinContent(a+1));
+			//fDHist->Delete(); //Deletion causes segfault
+		}
+	}
+	else { cout <<"Unknown unfolding method! Stop.\n"; assert(false); }
+	
+	//Process return histogram: match its binning to the input
+	const int pTBinN = H1->GetNbinsX();	double pTBin[pTBinN];
+	for (int a=0; a<pTBinN+1; a++) pTBin[a] = H1->GetXaxis()->GetBinLowEdge(a+1);
+	TH1D* H1R = (TH1D*)hReco->Rebin(pTBinN, Form("%s_unfolded", H1->GetName()), pTBin);
+
+	//+++++++++++++++++++++++++++++++++++++++++++
+	
+	if (Show)
+	{
+		gStyle->SetOptStat(0);
+		TCanvas* c1 = new TCanvas("c1", "", 1600, 900/2);
+		c1->SetName(Form("c1b_%s_%s_%s_unfold", Suffix, Cut, CutFlag));
+		c1->Divide(2, 1);
+
+		c1->cd(1)->SetGrid();
+		hRM_unfold->GetZaxis()->SetLabelSize(0.03);
+		hRM_unfold->SetMarkerColor(2);
+		hRM_unfold->SetMarkerSize(1.2);
+		hRM_unfold->SetStats(false);
+		hRM_unfold->SetTitle(Form("%s, RM (%s);pT (eXi);pT (Xic0)", Suffix, UFMethod));
+		hRM_unfold->DrawCopy("colz");// text45");
+
+		c1->cd(2)->SetGridy();
+		TLegend* L1 = new TLegend(0.5, 0.65, 0.75, 0.85);
+		for (int a=0; a<2; a++)
+		{
+			TH1D* H1Temp;
+			if (a==0) H1Temp = (TH1D*)H1 ->Clone(Form("%s_showB", H1 ->GetName()));
+			if (a==1) H1Temp = (TH1D*)H1R->Clone(Form("%s_showB", H1R->GetName()));
+
+			H1Temp->SetLineColor(2 * (a+1));
+			H1Temp->SetMarkerColor(2 * (a+1));
+			H1Temp->SetMarkerStyle(24 - a*4);
+			if (a==0) H1Temp->SetTitle(Form("%s, unfolding;pT", Suffix));
+			H1Temp->DrawCopy(a==0?"hist e":"hist e same");
+			L1->AddEntry(H1Temp, a==0?"Raw":"Unfolded", "lp");
+		}//a
+		L1->Draw("same");
+
+		c1->Print(Form("%s.png", c1->GetName()));
+	}//Show
+
+	heXiPair->Delete();
+	hXic0->Delete();
+	hRM_unfold->Delete();
+	hReco->Delete();
+	return H1R;
+}//ApplyUnfolding
+
+//-----------------
+TH1D* ApplyXic0Eff(
+		TH1D* H1, TFile* F_MC, bool IsWeighted,
+		const char* Cut, const char* CutFlag,
+		const char* Suffix, bool Show = false
+		)
+{
+	//Get Xic0 efficiency
+	TH1D* Xic0_eff_n = (TH1D*)F_MC->Get(Form("hMCRecoLevXic0_%s_%s", Cut, CutFlag));
+	TH1D* Xic0_eff_d = (TH1D*)F_MC->Get(Form("hMCGenInclusiveXic0_%s", IsWeighted?"W":"woW"));
+	TH1D* Xic0_eff = (TH1D*)Xic0_eff_n->Clone(Form("hXic0Eff_%s_%s", Cut, CutFlag)); Xic0_eff->Reset();
+	Xic0_eff->Divide(Xic0_eff_n, Xic0_eff_d, 1, 1, "b"); //1, 1, b: Weighting on n/d and compute binomial error
+
+	//Process return histogram: apply Xic0 efficiency on input
+	TH1D* H1R = (TH1D*)H1->Clone(Form("%s_Xic0EffCorr", H1->GetName()));
+	H1R->Divide(Xic0_eff);
+
+	//+++++++++++++++++++++++++++++++++++++++++++
+
+	//Draw
+	if (Show)
+	{
+		gStyle->SetOptStat(0);
+	    gStyle->SetPaintTextFormat("4.3f");
+		TCanvas* c1 = new TCanvas("c1", "", 1600, 900/2);
+		c1->SetName(Form("c1c_%s_%s_%s_Xic0Eff", Suffix, Cut, CutFlag));
+		c1->Divide(2, 1);
+
+		c1->cd(1);//->SetGrid();
+		Xic0_eff->GetYaxis()->SetRangeUser(-0.01, Xic0_eff->GetMaximum()*1.25);
+		Xic0_eff->SetLineColor(1);
+		Xic0_eff->SetMarkerColor(210);
+		Xic0_eff->SetMarkerSize(1.4);
+		Xic0_eff->SetTitle(Form("%s, Xic0 eff;pT;#epsilon", Suffix));
+		Xic0_eff->DrawCopy("hist e text45");
+
+		c1->cd(2)->SetGridy();
+		TLegend* L1 = new TLegend(0.50, 0.65, 0.85, 0.85);
+		for (int a=0; a<2; a++)
+		{
+			TH1D* H1Temp;
+			if (a==0) H1Temp = (TH1D*)H1 ->Clone(Form("%s_showC", H1 ->GetName()));
+			if (a==1) H1Temp = (TH1D*)H1R->Clone(Form("%s_showC", H1R->GetName()));
+			H1Temp->SetLineColor(a==0?4:210);
+			H1Temp->SetMarkerColor(a==0?4:210);
+			H1Temp->SetMarkerStyle(20 + a*4);
+
+			const float scaleF = 0.01;
+			if (a==0) H1Temp->GetYaxis()->SetRangeUser(-100, H1R->GetMaximum()*1.5*scaleF);
+			if (a==0) H1Temp->SetTitle(Form("%s, Xic0 eff correction;pT", Suffix));
+			if (a==1) H1Temp->Scale(scaleF);
+
+			H1Temp->DrawCopy(a==0?"hist e":"hist e same");
+			L1->AddEntry(H1Temp, a==0?"Raw":Form("(Raw / Xic0 eff) * %3.2f", scaleF), "lp");
+		}
+		L1->Draw();
+
+		c1->Print(Form("%s.png", c1->GetName()));
+	}//Show
+
+	Xic0_eff_n->Delete();
+	Xic0_eff_d->Delete();
+	Xic0_eff->Delete();
+	return H1R;
+}//ApplyXic0Eff
+
+//----------
+TH1D* GetXS(
+		TH1D* H1, double normF, double V0xSec, double Xic0SemiLBR,
+		const char* Suffix, float xMin = -999., float xMax = 999.
+		)
+{
+	TH1D* H1R = (TH1D*)H1->Clone(Form("Xic0XS_%s", Suffix));
+	H1R->SetTitle("");
+	H1R->Reset();
+
+	for (int a=0; a<H1->GetNbinsX(); a++)
+	{
+		if (H1->GetBinCenter(a+1) < xMin || H1->GetBinCenter(a+1) > xMax) continue;
+
+		const double Val = H1->GetBinContent(a+1);
+		const double Err = H1->GetBinError(a+1);
+
+		const double BinW   = H1->GetBinWidth(a+1);
+		const double CConj  = 2.; //e-Xi pair charge conjugate
+		const double DeltaY = 1.;
+		const double IntL   = normF/V0xSec;
+		const double xSecF  = BinW * CConj * DeltaY * IntL * Xic0SemiLBR;
+
+		H1R->SetBinContent(a+1, Val/xSecF);
+		H1R->SetBinError  (a+1, Err/xSecF);
 	}
 
-	return hXic0Xsec;
-}//GetXSection
+	return H1R;
+}//GetXS
+
+#if 0
+//Get weighting factor
+//---------------------------------------------------------------------------------------------------------------
+void GetWeightingFactor(TFile* F_MC, TH1D* H1XS_data, vector<float> pTvec, const char* Suffix, bool Show = false)
+{
+	if (strcmp("out_MC_raw.root", F_MC->GetName())) { cout <<"You're using improper MC file! Stop.\n"; return; }
+
+	TH1D* H1XS_MC = (TH1D*)F_MC->Get("hMCGenInclusiveXic0_woW");
+	if (!H1XS_MC) { cout <<"Cannot find 'hMCGenInclusiveXic0_woW'! Stop.\n"; return; }
+	else cout <<Form("Open '%s' and '%s' for pT matching...\n", H1XS_data->GetName(), H1XS_MC->GetName());
+
+	if (H1XS_data->GetNbinsX() != H1XS_MC->GetNbinsX()) { cout <<"Binnings NOT match! Stop.\n"; return; }
+
+	//-------------------------------------------
+
+	enum {data, MC};
+	TH1D* H1XS[2];
+	H1XS[data] = (TH1D*)H1XS_data->Clone(Form("pTW_data_%s", Suffix));
+	H1XS[MC] = (TH1D*)H1XS_MC->Clone(Form("pTW_MC_%s", Suffix));
+
+	for (int a=0; a<2; a++) //Data and MC
+	{
+		//Empty the bin "0 < pT < 1" if it still filled
+		const float Bin1Cnt = H1XS[a]->GetBinCenter(1);
+		const float Bin1Val = H1XS[a]->GetBinContent(1);
+		if (Bin1Cnt>0 && Bin1Cnt<1 && Bin1Val!=0) { H1XS[a]->SetBinContent(1, 0); H1XS[a]->SetBinError(1, 0); }
+
+		//Normalize by bin width
+		for (int b=0; b<H1XS[a]->GetNbinsX(); b++)
+		{
+			const float BinC = H1XS[a]->GetBinContent(b+1);
+			const float BinW = H1XS[a]->GetBinWidth(b+1);
+			if (BinC!=0 && fabs(BinW-1)>1.e-3) H1XS[a]->SetBinContent(b+1, BinC/BinW);
+		}
+
+		//Normalize by self integral
+		const double INTEGRAL = H1XS[a]->Integral();
+		H1XS[a]->Scale(1/INTEGRAL);
+	}//a, data or MC
+
+	//-------------------------------------------
+
+	enum {CT, UD, DU};
+	TH1D* H1Ratio[3];
+	H1Ratio[CT] = (TH1D*)H1XS[data]->Clone(Form("pTW_ratio_%s", Suffix));
+	H1Ratio[CT]->Divide(H1XS[MC]);
+	H1Ratio[UD] = (TH1D*)H1Ratio[CT]->Clone(Form("%s_updown", H1Ratio[CT]->GetName()));
+	H1Ratio[DU] = (TH1D*)H1Ratio[CT]->Clone(Form("%s_downup", H1Ratio[CT]->GetName()));
+	H1Ratio[UD]->Reset(); H1Ratio[UD]->Sumw2(false);
+	H1Ratio[DU]->Reset(); H1Ratio[DU]->Sumw2(false);
+
+	for (int a=0; a<H1Ratio[CT]->GetNbinsX(); a++)
+	{
+		const float BinC  = H1Ratio[CT]->GetBinContent(a+1); if (BinC == 0) continue;
+		const float BinEL = H1Ratio[CT]->GetBinErrorLow(a+1);
+		const float BinEU = H1Ratio[CT]->GetBinErrorUp(a+1);
+		const float pTMean = H1Ratio[CT]->GetBinCenter(a+1);
+		if (pTMean < 4.0)
+		{
+			H1Ratio[UD]->SetBinContent(a+1, BinC + BinEU); 
+			H1Ratio[DU]->SetBinContent(a+1, BinC - BinEL);
+		}
+		else if (pTMean < 5.0) // 4 < pT < 5
+		{
+			H1Ratio[UD]->SetBinContent(a+1, BinC);
+			H1Ratio[DU]->SetBinContent(a+1, BinC);
+		}
+		else // pT > 5
+		{
+			H1Ratio[UD]->SetBinContent(a+1, BinC - BinEL);
+			H1Ratio[DU]->SetBinContent(a+1, BinC + BinEU);
+		}
+	}//a, 3 ratio
+
+	TF1* F1Ratio[3];
+	for (int a=0; a<3; a++)
+	{
+		//F1Ratio[a] = new TF1(Form("F1Ratio_%i", a), "TMath::Exp([0] + [1]*x)", 1, pTvec.back());
+		//H1Ratio[a]->Fit(F1Ratio[a]->GetName(), "EQR0", "", 1, pTvec.back());
+		F1Ratio[a] = new TF1(Form("F1Ratio_%i", a), "expo", 1, pTvec.back());
+		H1Ratio[a]->Fit(F1Ratio[a]->GetName(), "EQR0");
+	}//a, 3 ratio
+
+	//-------------------------------------------
+
+	if (Show)
+	{
+		TCanvas* c1 = new TCanvas("c1", "", 1600, 1200/2);
+		c1->SetName(Form("c1f_pTWeight_%s", Suffix));
+		c1->Divide(2, 1);
+
+		c1->cd(1)->SetLogy();
+		TLegend* L1 = new TLegend(0.65, 0.7, 0.85, 0.85);
+		L1->SetMargin(0.5);
+		for (int a=0; a<2; a++)
+		{
+			if (a==0) H1XS[a]->GetYaxis()->SetRangeUser(1.e-7, 2.0);
+			if (a==0) H1XS[a]->SetTitle(Form("%s;pT;dN/NdPT", Suffix));
+			H1XS[a]->SetStats(false);
+			H1XS[a]->SetLineColor(a+1);
+			H1XS[a]->SetMarkerColor(a+1);
+			H1XS[a]->SetMarkerSize(1.2);
+			H1XS[a]->SetMarkerStyle(a*4 + 20);
+			H1XS[a]->DrawCopy(a==0?"hist ep":"hist ep same");
+			L1->AddEntry(H1XS[a], a==0?"data":"MC", "lp");
+		}
+		L1->Draw("same");
+
+		c1->cd(2);
+		TLegend* L2 = new TLegend(0.45, 0.5, 0.85, 0.85);
+		L2->SetHeader("Anchor point: 4 < pT < 5", "C");
+		L2->SetMargin(0.3);
+		const int RCOLOR[3] = {1, 2, 4};
+		for (int a=0; a<3; a++)
+		{
+			if (a==0) H1Ratio[a]->GetYaxis()->SetRangeUser(-0.5, 3.);
+			if (a==0) H1Ratio[a]->SetTitle(Form("%s;pT;Weighting factor", Suffix));
+			H1Ratio[a]->SetStats(false);
+			H1Ratio[a]->SetLineColor(RCOLOR[a]);
+			H1Ratio[a]->SetMarkerColor(RCOLOR[a]);
+			H1Ratio[a]->SetMarkerStyle(a==0?20:24);
+			H1Ratio[a]->SetMarkerSize(1.2);
+			H1Ratio[a]->DrawCopy(a==0?"pe":"p same");
+
+			F1Ratio[a]->SetLineColor(RCOLOR[a]);
+			//F1Ratio[a]->SetLineStyle(2);
+			F1Ratio[a]->Draw("l 9 same");
+
+			const float p0Val = F1Ratio[a]->GetParameter(0);
+			const float p1Val = F1Ratio[a]->GetParameter(1);
+			const float p0Err = F1Ratio[a]->GetParError(0);
+			const float p1Err = F1Ratio[a]->GetParError(1);
+			L2->AddEntry(F1Ratio[a], Form("p0: %7.6f #pm %7.6f", p0Val, p0Err), "lp");
+			L2->AddEntry((TObject*)0, Form("p1: %7.6f #pm %7.6f", p1Val, p1Err), "");
+		}
+		L2->Draw();
+
+		c1->Print(Form("%s.png", c1->GetName()));
+	}//Show
+
+	for (int a=0; a<2; a++) H1XS[a]->Delete();
+	for (int a=0; a<3; a++) H1Ratio[a]->Delete();
+	//for (int a=0; a<3; a++) F1Ratio[a]->Delete();
+
+	return;
+}//GetWeightingFactor
+#endif
 
 #endif //XI0CANAFUNCTION

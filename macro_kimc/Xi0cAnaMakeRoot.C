@@ -38,61 +38,69 @@ void nSigmaPlot(TFile* F, const char* SDIR); //nSigmaTOF and TPC plot
 void XiMassvsPt(TFile* F, const char* SDIR); //Xi mass distribution for various pT bin
 void XiCutDistribution(TFile *F, const char* SDIR); //look Xi cut value distribution from prompt an feeddown Xic0
 void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG,
-		double* MultPerc, double* WFitPar, bool INELLgt0);
+		double* MultPerc, double* WFitPars, bool INELLgt0);
 
 //----------------------------------------------------------------
 void Xi0cAnaMakeRoot(
 		TString inFile = "AnalysisResults_data.root",
 		const char* TRIG = "MB", //MB, HMV0, or HMSPD
-		const double perc0 = 0.0,
-		const double perc1 = 100,
-		const bool INELLgt0 = true
+		const double Perc0 = 0.0,
+		const double Perc1 = 100,
+		const bool MCWeight = false,
+		const bool INELLgt0 = false
 		)
 {
+	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file
+	double MultPerc[2] = {Perc0, Perc1}; //Multiplicity percentile
+	double WFitPars[2] = {0.}; //Weighting fit parameters for MC
+
 	//+++++++++++++++++++++++++++++++++++++++++++
 
-	double MultPerc[2] = {perc0, perc1};
-	double WFitPar[2] = {0.889618, -0.329188}; //default
-	//double WFitPar[2] = {1.43224e+00, -4.44314e-01}; //var1
-	//double WFitPar[2] = {1.99904e-01, -1.98923e-01}; //var2
-
-	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file
-    const char* PERC = "";
-
-	//Determine type and relevant parameters
+	//Data or MC
     if ( !inFile.Contains("data") && !inFile.Contains("MC") ) { cout <<"File type?\n"; return; }
     bool IsMC = inFile.Contains("MC")?true:false;
-    const char* TYPE = (IsMC==false)?"data":"MC";
+	const char* TYPE = (IsMC==false)?"data":"MC";
 
-	if (!IsMC) PERC = Form("%2.1fto%2.1f", MultPerc[0], MultPerc[1]);
+	//Weighting fit parameters for MC
+	if (MCWeight==false) WFitPars[0] = WFitPars[1] = 1.0;
 	else
 	{
-		if (fabs(WFitPar[0]-1.0) > 1.e-5) TYPE = Form("%s_wgt", TYPE); //Weighted
-		if (fabs(WFitPar[0]-1.0) < 1.e-5) TYPE = Form("%s_raw", TYPE); //Raw
+		//Legacy values by Jinjoo
+		//double WFitPars[2] = {0.889618, -0.329188}; //default
+		//double WFitPars[2] = {1.43224e+00, -4.44314e-01}; //var1
+		//double WFitPars[2] = {1.99904e-01, -1.98923e-01}; //var2
+
+		if (!strcmp(TRIG, "MB"))
+		{
+			if      (Perc0 ==  0.0 && Perc1 == 100.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+			else if (Perc0 ==  0.1 && Perc1 ==  30.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+			else if (Perc0 == 30.0 && Perc1 == 100.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+		}
+		else if (!strcmp(TRIG, "HMV0"))
+		{
+			if (Perc0 == 0.0 && Perc1 == 0.1) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+		}
+		else { cout <<Form("Unknown setting: %s + [%2.1f, %2.1f], stop.\n", TRIG, Perc0, Perc1); return; }
 	}
 
 	//+++++++++++++++++++++++++++++++++++++++++++
 
-	TString outName;
+	//Info
     cout <<"\nGenerating ROOT file in following setup:" <<endl;
     cout <<Form("- Type: %s", TYPE) <<endl;
-	if (!IsMC)
-	{
-		cout <<Form("- Trigger: %s\n", TRIG);
-		cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]);
-		outName = Form("out_%s_%s_%s.root", TYPE, TRIG, PERC);
-		outName.ReplaceAll("0.1", "0p1");
-		outName.ReplaceAll("0.0", "0");
-	}
-    else
-	{
-		cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPar[0], WFitPar[1]);
-		outName = Form("out_%s.root", TYPE);
-	}
+	cout <<Form("- Trigger: %s\n", TRIG);
+	cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]);
+    if (IsMC) cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPars[0], WFitPars[1]);
 	if (INELLgt0) cout <<"- INEL>0 is on" <<endl;
 
-	//+++++++++++++++++++++++++++++++++++++++++++
-	
+	//Output file name
+	TString outName;
+	if (IsMC && MCWeight==false) outName = Form("out_%s_raw.root", TYPE);
+	else outName = Form("out_%s_%s_%2.1fto%2.1f.root", TYPE, TRIG, Perc0, Perc1);
+	outName.ReplaceAll("0.1", "0p1");
+	outName.ReplaceAll("0.0", "0");
+
+	//Input and Output
 	TFile* F = TFile::Open(inFile);
 	if (!F || F->IsZombie()) { cout <<Form("Cannot open %s!\n", (const char*)inFile); return; }
 	TFile* G = new TFile(outName, "recreate");
@@ -100,12 +108,11 @@ void Xi0cAnaMakeRoot(
 	//nSigmaPlot(F, SDIR);
 	//XiMassvsPt(F, SDIR);
 	//XiCutDistribution(F, SDIR);
-	eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPar, INELLgt0);
+	eXiPairTree(F, IsMC, SDIR, TRIG, MultPerc, WFitPars, INELLgt0);
 
 	G->Write();
 	G->Close();
 	F->Close();
-
 	return;
 }//Main
 
@@ -207,7 +214,7 @@ void XiCutDistribution(TFile *F, const char* SDIR)
 
 //----------------------------------------------------
 void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
-		const char* TRIG, double* MultPerc, double* WFitPar, bool INELLgt0
+		const char* TRIG, double* MultPerc, double* WFitPars, bool INELLgt0
 		)
 {
 	//Trigger bits
@@ -217,21 +224,21 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		return;
 	}
 
-	UInt_t TrigMB    = 2;
-	UInt_t TrigHMV0  = 65536;
-	UInt_t TrigHMSPD = 8;
+	UInt_t TrigMB   = 2;
+	UInt_t TrigHMV0 = 65536;
 
 	//MC weight fit parameters
-	const char* FitFcnDef = (fabs(WFitPar[0]-1.0) < 1.e-5)?"1":"expo";
+	const char* FitFcnDef = (fabs(WFitPars[0]-1.0) < 1.e-5)?"1":"expo";
 	TF1* fWeightFit = new TF1("fWeightFit", FitFcnDef, 0, 20);
-	fWeightFit->SetParameter(0, WFitPar[0]);
-	fWeightFit->SetParameter(1, WFitPar[1]);
+	fWeightFit->SetParameter(0, WFitPars[0]);
+	fWeightFit->SetParameter(1, WFitPars[1]);
 
-	Double_t binning[]  = {0.,1.,2.,3.,4.,5.,6.,8.,12.,16.,20}; //11
-	Double_t binning2[] = {1.,2.,3.,4.,5.,6.,8.,12.}; //8
+	//Double_t binning[] = {0.,1.,2.,3.,4.,5.,6.,7.,8.,9., 10.,11.,12.,13.,14.,15.,16.,17.,18.,19., 20.};
+	Double_t binning[] = {0.,1.,2.,3.,4.,5.,6.,8.,12.,16.,20}; //11
+	const int nBinning = sizeof(binning)/sizeof(binning[0]) - 1;
 
-	const int nBinning  = sizeof(binning)/sizeof(binning[0]) - 1;
-	const int nBinning2 = sizeof(binning2)/sizeof(binning2[0]) - 1;
+	//Double_t binning2[] = {1.,2.,3.,4.,5.,6.,8.,12.}; //8
+	//const int nBinning2 = sizeof(binning2)/sizeof(binning2[0]) - 1;
 
 	//Link tree
 	//*******************************************
@@ -779,7 +786,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	TH1F* hMCGenPromptXic0_W = MakeTH1("hMCGenPromptXic0_W",       nBinning, binning);
 	TH1F* hMCGenFeeddowmXic0_W = MakeTH1("hMCGenFeeddowmXic0_W",   nBinning, binning);
 
-	TH1F *hprompt    = MakeTH1("hprompt",    nBinning, binning); //kimc: replaced 7 to nBinning2
+	TH1F *hprompt    = MakeTH1("hprompt",    nBinning, binning);
 	TH1F *hnonprompt = MakeTH1("hnonprompt", nBinning, binning);
 	TH1F *hinclu     = MakeTH1("hinclu",     nBinning, binning);
 
@@ -836,9 +843,8 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 
         //Trigger, apply only to the data
         Bool_t TrigFired = false;
-        if      ( !strcmp(TRIG, "MB")    && (fTrigBit & TrigMB)    ) TrigFired = true;
-        else if ( !strcmp(TRIG, "HMV0")  && (fTrigBit & TrigHMV0)  ) TrigFired = true;
-        else if ( !strcmp(TRIG, "HMSPD") && (fTrigBit & TrigHMSPD) ) TrigFired = true;
+        if      ( !strcmp(TRIG, "MB")   && (fTrigBit & TrigMB)   ) TrigFired = true;
+        else if ( !strcmp(TRIG, "HMV0") && (fTrigBit & TrigHMV0) ) TrigFired = true;
         if (IsMC==false && TrigFired==false) continue;
 
         //Multiplicity percentile, apply only to the data
@@ -846,7 +852,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
         if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
 
 		//INEL > 0 only, updated at June 8 (2021)
-		if (INELLgt0==true && fINEL==false) continue;
+		if ( INELLgt0==true && fINEL==false ) continue;
 
 		//eXi pair - flags
 		//+++++++++++++++++++++++++++++++++++++++
@@ -961,6 +967,16 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		if (In_Mass<2.7) PairMass_Loose_flag = kTRUE;
 		if (In_Mass<2.5) PairMass_Stand_flag = kTRUE;
 		if (In_Mass<2.3) PairMass_Tight_flag = kTRUE;
+
+		/*
+		//Special cut for HMV0 + pT < 3, July 7 (2021), kimc
+		if ( !strcmp(TRIG, "HMV0") && Pt<3 )
+		{
+			OPAngle_Stand_flag = PairMass_Stand_flag = false;
+			if (cosoa > cos(70 * (3.141592/180))) OPAngle_Stand_flag = kTRUE;
+			if (In_Mass < 2.0) PairMass_Stand_flag = kTRUE;
+		}
+		*/
 
 		//Fill
 		//+++++++++++++++++++++++++++++++++++++++
@@ -2077,9 +2093,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	TH1F* hMCRecoLevPair_Unfold_stand_pt2 = (TH1F*) hMCRecoLevPair_im_stand->Clone("hMCRecoLevPair_Bayes_stand_pt2");
 	TH1F* hXic0_Svd_stand = (TH1F*) hMCRecoLevXic0_im_stand->Clone("hXic0_Bayes_stand");
 	TH1D* hEventNumbers = (TH1D*) hist->FindObject("hEventNumbers")->Clone("hEventNumbers");
-
-	//kimc: new normalization histograms: trigger vs. multiplicity
-	if (!IsMC) TH2D* hNorm_multV0 = (TH2D*)hist->FindObject("hNorm_multV0")->Clone();
 	#endif
 
 	return;
