@@ -543,7 +543,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
     fIsINELLgtZERO = false;
     if (IsMC==false && AliPPVsMultUtils::IsINELgtZERO(fEvt)==true) fIsINELLgtZERO = true;
 
-	//INEL>0 effect check histogram
+	//INEL>0 effect check histograms
 	if (IsMC == false)
 	{
         for (int a=0; a<2; a++)
@@ -568,8 +568,20 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 
 	//*****************************************************
 
-	//Reject pile-up events
-	if (!IsMC && fEvt->IsPileupFromSPD(3.,0.8,3.,2.,5.)) return;
+	//Reject pile-up events: updated at Sep.17, 2021. Referred below link
+	//https://twiki.cern.ch/twiki/bin/viewauth/ALICE/AliDPGtoolsPileup
+	Int_t nContributor = -999;
+	if (IsPA) nContributor = 5; //For pA, but there's a NOTE at above link - PLEASE CHECK
+	else
+	{
+		if      ( fNSPDTracklets < 20 ) nContributor = 3; //Conventional, valid for low multiplicity pp
+		else if ( fNSPDTracklets < 50 ) nContributor = 4; //20 ~ 50
+		else nContributor = 5; //>= 50, valid for high multiplicity pp and p-Pb
+	}
+	if (nContributor == -999) { cout <<"ERROR in pileup cut!\n"; assert(false); }
+	if (!IsMC && fEvt->IsPileupFromSPD(nContributor, 0.8, 3., 2., 5.)) return;
+	//if (!IsMC && fEvt->IsPileupFromSPD(3.,0.8,3.,2.,5.)) return; //Conventional setting before Sep. 17, 2021
+	
 	fHistos->FillTH1("hEventNumbers", "PSpileup", 1);
 
 	//Primary Vertex Selection

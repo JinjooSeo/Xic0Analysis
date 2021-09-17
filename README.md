@@ -3,6 +3,19 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+ Seo. 17 (kimc)
+
+	- AliAnalysisTaskSEXic0Semileptonic.cxx
+		a. Updated pileup rejection configurations
+			* https://twiki.cern.ch/twiki/bin/viewauth/ALICE/AliDPGtoolsPileup
+		b. Implemented # of contributors cut:
+			b-1. For pp, nSPDTracklet < 20 : 3 (conventional, for low multiplicity)
+			b-2. For pp, 20 <= nSPD... < 50 : 4
+			b-3. For pp, nSPD... > 50 : 5
+			b-4. For pA (pPb) : 5 (* NOTE exists in above link: PLEASE CHECK)
+
+//-----------------------------------------------
+
  July 7 (kimc)
 
 	- AliAnalysisTask...
