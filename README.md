@@ -3,7 +3,26 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
- Seo. 17 (kimc)
+ Sep. 27 (kimc)
+
+	- macro_kimc/Xic0AnaMakeRoot.C
+		a. Added new TH1 histogram " hRunNumber ", for data only (!IsMC)
+		b. Fill each eXi candidate's run number after following cuts:
+		   runnumber validity, trigger, multiplicity, INEL>0 (if invoked), Xi mass tolerance,
+		   pair mass low limit, and dummy tree rejection
+		   -> L874
+		c. WARNING: this fill point is BEFORE the quality cut (VLoose, Loose, ..., VTight)
+
+	- macro_kimc/Xi0cAnaFunction.C
+		a. FUnction " GetNormFac " : returns ANC->GetNeventsForNorm() for specific setup
+		   * CAVEAT: require the train output (which has AliNormalizationCounter object)
+		b. Function " GetRunFrac " : returns certain fraction of runs from given hRunNumber
+		c. Function " GetV0xSec " : contains hard-coded V0 x-section values
+		* To check how to use above a. - c., refer macro_kimc/Xi0cAnaExecute.C, L39 - L54
+
+//-----------------------------------------------
+
+ Sep. 17 (kimc)
 
 	- AliAnalysisTaskSEXic0Semileptonic.cxx
 		a. Updated pileup rejection configurations
