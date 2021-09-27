@@ -2,7 +2,7 @@
 #define XI0CANAMAKEROOT
 
 /*
-	Make 2nd ROOT files for Xi0c analysis, originally written by J. Seo
+	Make 2nd ROOT files for Xic0 analysis, originally written by J. Seo
 
 	Chong Kim
 	Inha Univ. / Pusan National Univ.
@@ -65,22 +65,27 @@ void Xi0cAnaMakeRoot(
 	if (MCWeight==false) WFitPars[0] = WFitPars[1] = 1.0;
 	else
 	{
+		WFitPars[0] = +0.889618;
+		WFitPars[1] = -0.329188;
+
 		//Legacy values by Jinjoo
 		//double WFitPars[2] = {0.889618, -0.329188}; //default
 		//double WFitPars[2] = {1.43224e+00, -4.44314e-01}; //var1
 		//double WFitPars[2] = {1.99904e-01, -1.98923e-01}; //var2
 
+		/*
 		if (!strcmp(TRIG, "MB"))
 		{
-			if      (Perc0 ==  0.0 && Perc1 == 100.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
-			else if (Perc0 ==  0.1 && Perc1 ==  30.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
-			else if (Perc0 == 30.0 && Perc1 == 100.) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+			if      (Perc0 ==  0.0 && Perc1 == 100.) { WFitPars[0] = 1.237916; WFitPars[1] = -0.504478; }
+			else if (Perc0 ==  0.1 && Perc1 ==  30.) { WFitPars[0] = 1.248316; WFitPars[1] = -0.530643; }
+			else if (Perc0 == 30.0 && Perc1 == 100.) { WFitPars[0] = 1.171391; WFitPars[1] = -0.440807; }
 		}
 		else if (!strcmp(TRIG, "HMV0"))
 		{
-			if (Perc0 == 0.0 && Perc1 == 0.1) { WFitPars[0] = 0.889618; WFitPars[1] = -0.329188; }
+			if (Perc0 == 0.0 && Perc1 == 0.1) { WFitPars[0] = 1.453247; WFitPars[1] = -0.517949; }
 		}
 		else { cout <<Form("Unknown setting: %s + [%2.1f, %2.1f], stop.\n", TRIG, Perc0, Perc1); return; }
+		*/
 	}
 
 	//+++++++++++++++++++++++++++++++++++++++++++
@@ -218,7 +223,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		)
 {
 	//Trigger bits
-	if ( !IsMC && strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") && strcmp(TRIG, "HMSPD") )
+	if ( !IsMC && strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") )
 	{
 		cout <<"No valid TRIG provided! Stop.\n";
 		return;
@@ -233,12 +238,8 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	fWeightFit->SetParameter(0, WFitPars[0]);
 	fWeightFit->SetParameter(1, WFitPars[1]);
 
-	//Double_t binning[] = {0.,1.,2.,3.,4.,5.,6.,7.,8.,9., 10.,11.,12.,13.,14.,15.,16.,17.,18.,19., 20.};
 	Double_t binning[] = {0.,1.,2.,3.,4.,5.,6.,8.,12.,16.,20}; //11
 	const int nBinning = sizeof(binning)/sizeof(binning[0]) - 1;
-
-	//Double_t binning2[] = {1.,2.,3.,4.,5.,6.,8.,12.}; //8
-	//const int nBinning2 = sizeof(binning2)/sizeof(binning2[0]) - 1;
 
 	//Link tree
 	//*******************************************
@@ -277,7 +278,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	Pair->SetBranchAddress("echarge", &echarge);
 	Pair->SetBranchAddress("TOFnSigma", &nSigmaTOF);
 	Pair->SetBranchAddress("TPCnSigma", &nSigmaTPC);
-	//Pair->SetBranchAddress("TPC", &TPCCluster);
 	Pair->SetBranchAddress("TPCPID", &TPCPIDCluster);
 	Pair->SetBranchAddress("ITS", &ITSCluster);
 	Pair->SetBranchAddress("e_crossedrows", &e_crossedratio);
@@ -542,8 +542,17 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	TH1F *hpre_Svd_stand5_de = MakeTH1("hpre_Svd_stand5_de", nBinning, binning);
 	TH1F *hpre_Svd_stand5_nu = MakeTH1("hpre_Svd_stand5_nu", nBinning, binning);
 
-	//Histograms, MC, usingunfolding and efficiency calculation
-	//*********************************************************
+	//kimc, Sep. 27, 2021, for weighted nomalization factor calculation
+	TH1F* hRunNumber;
+	if (!IsMC)
+	{
+		hRunNumber = new TH1F("hRunNumber", "", abs(295000-252000)+2, 252000, 295000);
+		hRunNumber->SetTitle("Run by Run eXi candidate yields after cut;runNumber");
+		hRunNumber->Sumw2();
+	}
+
+	//Histograms, MC, unfolding and efficiency calculation
+	//****************************************************
 
 	TH2F* hRPM_eRec_loose_un        = MakeTH2("hRPM_eRec_loose_un", nBinning, binning); //RM using unfolding
 	TH2F* hRPM_eRec_loose           = MakeTH2("hRPM_eRec_loose", nBinning, binning);    //RM using refolding
@@ -863,6 +872,9 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		if (In_Mass < 1.3)                 continue; //pair mass low limit
 		if (fabs(pTe == 999))              continue; //dummy tree reject
 
+		//kimc, Sep. 27, 2021
+		if (!IsMC) hRunNumber->Fill(fRunNumber);
+
 		//Bool_t isparticle = (vcharge>0)?kFALSE:kTRUE; //kimc: what's the purpose? Masking it
 		Float_t VL_e_nsigma_cut = -4.3 + (1.17*pTe) - (0.094*pTe*pTe);
 		Float_t  L_e_nsigma_cut = -4.1 + (1.17*pTe) - (0.094*pTe*pTe); ///need to modify
@@ -967,16 +979,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		if (In_Mass<2.7) PairMass_Loose_flag = kTRUE;
 		if (In_Mass<2.5) PairMass_Stand_flag = kTRUE;
 		if (In_Mass<2.3) PairMass_Tight_flag = kTRUE;
-
-		/*
-		//Special cut for HMV0 + pT < 3, July 7 (2021), kimc
-		if ( !strcmp(TRIG, "HMV0") && Pt<3 )
-		{
-			OPAngle_Stand_flag = PairMass_Stand_flag = false;
-			if (cosoa > cos(70 * (3.141592/180))) OPAngle_Stand_flag = kTRUE;
-			if (In_Mass < 2.0) PairMass_Stand_flag = kTRUE;
-		}
-		*/
 
 		//Fill
 		//+++++++++++++++++++++++++++++++++++++++
