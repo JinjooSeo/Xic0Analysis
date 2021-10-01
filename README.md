@@ -3,6 +3,33 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+ Oct. 1 (kimc)
+
+	- AliAnalysisTask...
+		
+		a.	Newly added pileup rejection cut (based on ' AliRDHFCutsXictoeleXifromAODtracks ') is problematic
+			a-1. It works as adding a flag on the cut object:
+			     e.g., fEvtCuts->SetOptPileup(AliRDHFCuts::kRejectMVPileupEvent);
+			a-2. No return statement was invoked - I'm afraid pileup events will be accepted in this state
+			a-3. A bool type member function exists to check the pileup status:
+			     AliRDHFCuts->IsEventRejectedDueToPileup()
+
+		b.	Two cut objects exist by triggers: fEvtCuts (kINT7) and fEvtCuts_HMV0 (kHighMultV0)
+			b-1. Pileup status depends on the trigger used? YES, IT DOES
+				 * I see many cases of " MB is ok, but HMV0 is pileup "
+			b-2. Added new tree variable to judge later:
+			     fEventTree->fPileup 0 (no pileup in MB/HMV0), 1 (MB ok, HMV0 pileup) and 2 (MB pileup, HMV0 ok)
+
+		c.	Wrapped AliNormalizationCounter objects by pileup status boolean variable:
+			the events being counted by ANC are the ones " NOT piled up "
+
+	- /macro_kimc/Xi0cAnaMakeRoot.C
+
+		a. New variable to deal with pileup status by trigger: EventTree->fPileup (L246)
+		b. Invoke the condition during the event selection (L847)
+
+//-----------------------------------------------
+
  Sep. 27 (kimc)
 
 	- macro_kimc/Xic0AnaMakeRoot.C
