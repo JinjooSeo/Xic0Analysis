@@ -3,7 +3,7 @@ AliAnalysisTaskSEXic0Semileptonic *AddTaskXic0Semileptonic(
 		const char *option     = "DataAOD", //When scanning AOD, add "AOD"
 		const char *coll       = "PP",
 		TString outputFileName = "",
-		bool UseTrigHM         = false //Eanble if high multiplicity trigger required
+		bool UseTrigHM         = true //Eanble if high multiplicity trigger required
 		)
 {
 	//Analysis manager
@@ -33,7 +33,7 @@ AliAnalysisTaskSEXic0Semileptonic *AddTaskXic0Semileptonic(
 	if (UseTrigHM)
 	{
 		task->UseTrig_kHMV0();
-		task->UseTrig_kHMSPD();
+		//task->UseTrig_kHMSPD();
 	}
 
 	//-------------------------------------------
@@ -71,15 +71,15 @@ AliAnalysisTaskSEXic0Semileptonic *AddTaskXic0Semileptonic(
 	AliAnalysisDataContainer *coutput11 = mgr->CreateContainer("ANC_HMV0_0to0p1",
 			AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
 
-    //kimc, June 22, additional AliNormalizationCounters
-    AliAnalysisDataContainer *coutput12 = mgr->CreateContainer("ANCINEL0_MB_0to100",
-            AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
-    AliAnalysisDataContainer *coutput13 = mgr->CreateContainer("ANCINEL0_MB_0p1to30",
-            AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
-    AliAnalysisDataContainer *coutput14 = mgr->CreateContainer("ANCINEL0_MB_30to100",
-            AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
-    AliAnalysisDataContainer *coutput15 = mgr->CreateContainer("ANCINEL0_HMV0_0to0p1",
-            AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
+	//kimc, June 22, additional AliNormalizationCounters
+	AliAnalysisDataContainer *coutput12 = mgr->CreateContainer("ANCINEL0_MB_0to100",
+			AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
+	AliAnalysisDataContainer *coutput13 = mgr->CreateContainer("ANCINEL0_MB_0p1to30",
+			AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
+	AliAnalysisDataContainer *coutput14 = mgr->CreateContainer("ANCINEL0_MB_30to100",
+			AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
+	AliAnalysisDataContainer *coutput15 = mgr->CreateContainer("ANCINEL0_HMV0_0to0p1",
+			AliNormalizationCounter::Class(), AliAnalysisManager::kOutputContainer, outputfile.Data());
 
 	//-------------------------------------------
 
@@ -98,10 +98,10 @@ AliAnalysisTaskSEXic0Semileptonic *AddTaskXic0Semileptonic(
 	mgr->ConnectOutput(task, 10, coutput10);
 	mgr->ConnectOutput(task, 11, coutput11);
 
-    mgr->ConnectOutput(task, 12, coutput12); //June 22
-    mgr->ConnectOutput(task, 13, coutput13);
-    mgr->ConnectOutput(task, 14, coutput14);
-    mgr->ConnectOutput(task, 15, coutput15);
+	mgr->ConnectOutput(task, 12, coutput12); //June 22
+	mgr->ConnectOutput(task, 13, coutput13);
+	mgr->ConnectOutput(task, 14, coutput14);
+	mgr->ConnectOutput(task, 15, coutput15);
 
 	mgr->SetDebugLevel(2);
 	if (!mgr->InitAnalysis()) return 0x0;

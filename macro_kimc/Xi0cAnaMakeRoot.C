@@ -40,7 +40,7 @@ void XiCutDistribution(TFile *F, const char* SDIR); //look Xi cut value distribu
 void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG,
 		double* MultPerc, double* WFitPars, bool INELLgt0);
 
-//----------------------------------------------------------------
+//-------------------
 void Xi0cAnaMakeRoot(
 		TString inFile = "AnalysisResults_data.root",
 		const char* TRIG = "MB", //MB, HMV0, or HMSPD
@@ -57,8 +57,8 @@ void Xi0cAnaMakeRoot(
 	//+++++++++++++++++++++++++++++++++++++++++++
 
 	//Data or MC
-    if ( !inFile.Contains("data") && !inFile.Contains("MC") ) { cout <<"File type?\n"; return; }
-    bool IsMC = inFile.Contains("MC")?true:false;
+	if ( !inFile.Contains("data") && !inFile.Contains("MC") ) { cout <<"File type?\n"; return; }
+	bool IsMC = inFile.Contains("MC")?true:false;
 	const char* TYPE = (IsMC==false)?"data":"MC";
 
 	//Weighting fit parameters for MC
@@ -91,11 +91,11 @@ void Xi0cAnaMakeRoot(
 	//+++++++++++++++++++++++++++++++++++++++++++
 
 	//Info
-    cout <<"\nGenerating ROOT file in following setup:" <<endl;
-    cout <<Form("- Type: %s", TYPE) <<endl;
+	cout <<"\nGenerating ROOT file in following setup:" <<endl;
+	cout <<Form("- Type: %s", TYPE) <<endl;
 	cout <<Form("- Trigger: %s\n", TRIG);
 	cout <<Form("- Multiplicity percentile: [%2.1f, %2.1f] \n", MultPerc[0], MultPerc[1]);
-    if (IsMC) cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPars[0], WFitPars[1]);
+	if (IsMC) cout <<Form("- Weight fit parameters: [%5.4f, %5.4f] \n", WFitPars[0], WFitPars[1]);
 	if (INELLgt0) cout <<"- INEL>0 is on" <<endl;
 
 	//Output file name
@@ -223,11 +223,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		)
 {
 	//Trigger bits
-	if ( !IsMC && strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") )
-	{
-		cout <<"No valid TRIG provided! Stop.\n";
-		return;
-	}
+	if ( !IsMC && strcmp(TRIG, "MB") && strcmp(TRIG, "HMV0") ) { cout <<"No valid TRIG provided! Stop.\n"; return; }
 
 	UInt_t TrigMB   = 2;
 	UInt_t TrigHMV0 = 65536;
@@ -250,7 +246,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	//EventTree
 	TTree* EventTree = (TTree*)F->Get(Form("%s/EventTree", SDIR));
 	if (!EventTree) { cout <<"Cannot link the EventTree!" <<endl; return; }
-	Float_t fRunNumber, fCentrality, fCentralSPD, fNSPDTracklets, fNeXiPair, fZvtx;
+	Float_t fRunNumber, fCentrality, fCentralSPD, fNSPDTracklets, fNeXiPair, fZvtx, fPileup;
 	UInt_t fTrigBit;
 	Bool_t fINEL;
 	EventTree->SetBranchAddress("fRunNumber",     &fRunNumber);
@@ -259,6 +255,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	EventTree->SetBranchAddress("fNSPDTracklets", &fNSPDTracklets);
 	EventTree->SetBranchAddress("fNeXiPair",      &fNeXiPair);
 	EventTree->SetBranchAddress("fVtxZ",          &fZvtx);
+	EventTree->SetBranchAddress("fPileup",        &fPileup); //0 (both ok), 1 (MB ok, HMV0 x), and 2 (MB x, HMV0 ok)
 	EventTree->SetBranchAddress("fTrigBit",       &fTrigBit);
 	EventTree->SetBranchAddress("fINEL",          &fINEL);
 
@@ -541,15 +538,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 	TH1F *hpre_Svd_stand4_nu = MakeTH1("hpre_Svd_stand4_nu", nBinning, binning);
 	TH1F *hpre_Svd_stand5_de = MakeTH1("hpre_Svd_stand5_de", nBinning, binning);
 	TH1F *hpre_Svd_stand5_nu = MakeTH1("hpre_Svd_stand5_nu", nBinning, binning);
-
-	//kimc, Sep. 27, 2021, for weighted nomalization factor calculation
-	TH1F* hRunNumber;
-	if (!IsMC)
-	{
-		hRunNumber = new TH1F("hRunNumber", "", abs(295000-252000)+2, 252000, 295000);
-		hRunNumber->SetTitle("Run by Run eXi candidate yields after cut;runNumber");
-		hRunNumber->Sumw2();
-	}
 
 	//Histograms, MC, unfolding and efficiency calculation
 	//****************************************************
@@ -856,6 +844,12 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
         else if ( !strcmp(TRIG, "HMV0") && (fTrigBit & TrigHMV0) ) TrigFired = true;
         if (IsMC==false && TrigFired==false) continue;
 
+		//Check pileup status by trigger: 0 (both ok), 1 (MB ok, HMV0 x), and 2 (MB x, HMV0 ok)
+		Bool_t PileupStat = false;
+		if      ( !strcmp(TRIG, "MB")   && ((int)fPileup > 1) )    PileupStat = true;
+		else if ( !strcmp(TRIG, "HMV0") && ((int)fPileup%2 != 0) ) PileupStat = true;
+		if (IsMC==false && PileupStat==true) continue;
+
         //Multiplicity percentile, apply only to the data
         const Float_t tempMP = fCentrality;
         if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
@@ -871,9 +865,6 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 		if (fabs(Massv - 1.32171) > 0.008) continue; //Xi mass tolerance
 		if (In_Mass < 1.3)                 continue; //pair mass low limit
 		if (fabs(pTe == 999))              continue; //dummy tree reject
-
-		//kimc, Sep. 27, 2021
-		if (!IsMC) hRunNumber->Fill(fRunNumber);
 
 		//Bool_t isparticle = (vcharge>0)?kFALSE:kTRUE; //kimc: what's the purpose? Masking it
 		Float_t VL_e_nsigma_cut = -4.3 + (1.17*pTe) - (0.094*pTe*pTe);

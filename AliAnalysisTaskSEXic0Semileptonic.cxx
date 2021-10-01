@@ -276,9 +276,6 @@ void AliAnalysisTaskSEXic0Semileptonic::UserCreateOutputObjects()
 	if (IsMC == false) fHistos->CreateTH1("hINELLgt0_0", "", 6, 0, 6, "s");
 	if (IsMC == false) fHistos->CreateTH1("hINELLgt0_1", "", 6, 0, 6, "s");
 
-	//Check yield by trigger: all (0), kINT7 (1), kHMV0 (2), and kHMSPD (3)
-	if (IsMC == false) fHistos->CreateTH2("hNorm_multV0", ";Mult;Trig", 1000,0,100, 4,0,4, "s");
-
 	fHistos->CreateTH1("hNonPromptXicRap","",500,-5,5,"s");
 	fHistos->CreateTH1("hPromptXicRap","",500,-5,5,"s");
 	fHistos->CreateTH1("hXicRap","",500,-5,5,"s");
@@ -472,7 +469,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	if (TMath::Abs(fBzkG )< 0.001) return;
 	fHistos->FillTH1("hEventNumbers", "ProperB", 1);
 
-	//Check collision type?
+	//Check run #
 	fRunNumber = fEvt->GetRunNumber();
     if (fRunNumber<252000 || fRunNumber>295000) return; //Mar. 18: discard events w/ invalid run numbers (RUN2)
 	fRunTable = new AliAnalysisTaskSEXic0RunTable(fRunNumber);
@@ -514,7 +511,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	//kimc: "flag for event selected" - is this an event-wise cut?
 	if (fEvtCuts->IsEventSelected(fEvt)) fHistos->FillTH1("hEventNumbers", "RDHCCutsSel", 1);
 
-	//Physics Selectio
+	//Physics Selection
 	if (!(inputHandler->IsEventSelected())) return;
 	fHistos->FillTH1("hEventNumbers","Sel",1);
 
@@ -586,7 +583,23 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	//if (!IsMC && fEvt->IsPileupFromSPD(nContributor, 0.8, 3., 2., 5.)) return;
 	//if (!IsMC && fEvt->IsPileupFromSPD(3.,0.8,3.,2.,5.)) return; //Conventional setting before Sep. 17, 2021
 	
-	 if (!(!IsMC && fEvt->IsPileupFromSPD(nContributor, 0.8, 3., 2., 5.))) fHistos->FillTH1("hEventNumbers", "PSpileup_SPD", 1);
+	if (!(!IsMC && fEvt->IsPileupFromSPD(nContributor, 0.8, 3., 2., 5.)))
+	{
+		fHistos->FillTH1("hEventNumbers", "PSpileup_SPD", 1);
+	}
+
+	//Oct. 1, 2021, kimc: pileup status depends on trigger... I hate my life
+	fPileupStat = 9999;
+	bool pileup_MB   = fEvtCuts     ->IsEventRejectedDueToPileup(); //true = piled up
+	bool pileup_HMV0 = fEvtCuts_HMV0->IsEventRejectedDueToPileup();
+
+	if ( pileup_MB==true && pileup_HMV0==true ) return; //Pileup in both triggers: discard it
+	else
+	{
+		if (pileup_MB==false && pileup_HMV0==false) fPileupStat = 0;
+		if (pileup_MB==false && pileup_HMV0==true)  fPileupStat = 1;
+		if (pileup_MB==true  && pileup_HMV0==false) fPileupStat = 2;
+	}
 
 	//Primary Vertex Selection
 	fVtxZ = 9999; //kimc
@@ -594,47 +607,35 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	if (!Vtx || Vtx->GetNContributors() < 1) return;
 	fHistos->FillTH1("hEventNumbers", "Goodz", 1);
 
-	//! Mar. 22
-	//AliNormalizationCounter: store events for later normalization (* original invoke position)
-	fCounter->StoreEvent(fEvt, fEvtCuts, IsMC);
-
-    //kimc, Mar. 18
-    if (fCentrality >=  0.0 && fCentrality <= 100.0) fCounter_MB_0to100  ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >=  0.1 && fCentrality <=  30.0) fCounter_MB_0p1to30 ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >= 30.0 && fCentrality <= 100.0) fCounter_MB_30to100 ->StoreEvent(fEvt, fEvtCuts, IsMC);
-    if (fCentrality >=  0.0 && fCentrality <=   0.1) fCounter_HMV0_0to0p1->StoreEvent(fEvt, fEvtCuts_HMV0, IsMC);
-	
-	fHistos->FillTH1("hEventNumbers", "PSpileup_MV", 1);
-
-	//kimc, June 23
-	if (fIsINELLgtZERO)
+	//AliNormalizationCounter: store events for later normalization
+	if (pileup_MB == false)
 	{
-		if (fCentrality >=  0.0 && fCentrality <= 100.0) fCntINEL0_MB_0to100  ->StoreEvent(fEvt,fEvtCuts,IsMC);
-		if (fCentrality >=  0.1 && fCentrality <=  30.0) fCntINEL0_MB_0p1to30 ->StoreEvent(fEvt,fEvtCuts,IsMC);
-		if (fCentrality >= 30.0 && fCentrality <= 100.0) fCntINEL0_MB_30to100 ->StoreEvent(fEvt,fEvtCuts,IsMC);
-		if (fCentrality >=  0.0 && fCentrality <=   0.1) fCntINEL0_HMV0_0to0p1->StoreEvent(fEvt,fEvtCuts_HMV0,IsMC);
-	}
-	//!
+		fCounter->StoreEvent(fEvt, fEvtCuts, IsMC); //Original, by Jinjoo
+		fHistos->FillTH1("hEventNumbers", "PSpileup_MV", 1);
 
+		if (fCentrality >=  0.0 && fCentrality <= 100.0) fCounter_MB_0to100  ->StoreEvent(fEvt, fEvtCuts, IsMC);
+		if (fCentrality >=  0.1 && fCentrality <=  30.0) fCounter_MB_0p1to30 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+		if (fCentrality >= 30.0 && fCentrality <= 100.0) fCounter_MB_30to100 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+		if (fIsINELLgtZERO)
+		{
+			if (fCentrality >=  0.0 && fCentrality <= 100.0) fCntINEL0_MB_0to100  ->StoreEvent(fEvt, fEvtCuts, IsMC);
+			if (fCentrality >=  0.1 && fCentrality <=  30.0) fCntINEL0_MB_0p1to30 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+			if (fCentrality >= 30.0 && fCentrality <= 100.0) fCntINEL0_MB_30to100 ->StoreEvent(fEvt, fEvtCuts, IsMC);
+		}
+	}//MB, w/o pileup
+	if (pileup_HMV0 == false)
+	{
+		if (fCentrality >= 0.0 && fCentrality <= 0.1)
+		{
+			fCounter_HMV0_0to0p1->StoreEvent(fEvt, fEvtCuts_HMV0, IsMC);
+			if (fIsINELLgtZERO) fCntINEL0_HMV0_0to0p1->StoreEvent(fEvt, fEvtCuts_HMV0, IsMC);
+		}
+	}//HMV0, w/o pileup
+
+	//Apply vtx Z cut
 	if (!(fabs(Vtx->GetZ())<10.)) return;
 	fHistos->FillTH1("hEventNumbers", "Goodzcut", 1);
 	fVtxZ = Vtx->GetZ(); //kimc
-
-    //Manual # of entries container: updated again at Mar. 18, 2021 (kimc)
-    if (IsMC == false)
-    {
-        fHistos->FillTH2("hNorm_multV0", fCentrality, 0);
-        if (inputHandler->IsEventSelected())
-        {
-            if (AliVEvent::kINT7)        fHistos->FillTH2("hNorm_multV0", fCentrality, 1);
-            if (AliVEvent::kHighMultV0)  fHistos->FillTH2("hNorm_multV0", fCentrality, 2);
-            if (AliVEvent::kHighMultSPD) fHistos->FillTH2("hNorm_multV0", fCentrality, 3);
-        }
-    }
-
-    //Judge if this event is INEL > 0, for data - original position
-    //fIsINELLgtZERO = false;
-    //if (IsMC==false && AliPPVsMultUtils::IsINELgtZERO(fEvt)==true) fIsINELLgtZERO = true;
 
 	if (IsHighMul)
 	{
@@ -716,6 +717,7 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 			fEventTreeVariable[3] = (Float_t)fNSPDTracklets;
 			fEventTreeVariable[4] = (Float_t)fNeXiPair;
 			fEventTreeVariable[5] = (Float_t)fVtxZ;
+			fEventTreeVariable[6] = (Float_t)fPileupStat;
 
 			fEventTreeVarTrig = 0; //Reset
 			if (!IsMC) fEventTreeVarTrig = inputHandler->IsEventSelected();
@@ -1909,7 +1911,7 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineEventTree()
 {
 	fEventTree = new TTree("EventTree", "EventTree");
 
-	const Int_t nVar = 6;
+	const Int_t nVar = 7;
 	fEventTreeVariable = new Float_t[nVar];
 	TString * fTreeVariableNames = new TString[nVar];
 
@@ -1919,6 +1921,7 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineEventTree()
 	fTreeVariableNames[3] = "fNSPDTracklets"; //# of SPD tracklets
 	fTreeVariableNames[4] = "fNeXiPair";      //# of saved pairs for the event: NOT 0 if more than pair saved
 	fTreeVariableNames[5] = "fVtxZ";
+	fTreeVariableNames[6] = "fPileup"; //pileup in both MB/HMV0), 1 (MB pileup, HMV0 ok), and 2 (MB ok, HMV0 pileup)
 
 	for (Int_t iVar=0; iVar<nVar; iVar++)
 	{

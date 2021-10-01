@@ -159,6 +159,7 @@ class AliAnalysisTaskSEXic0Semileptonic : public AliAnalysisTaskSE
 		Float_t fRunOffset  = 0;    //!
 		Float_t fCentralSPD = 9999; //kimc
 		Float_t fVtxZ       = 9999; //kimc
+		Float_t fPileupStat = 9999;
 
 		Double_t MassTolLambda = 0.008;
 		Double_t MassTolXi     = 0.01;
