@@ -547,24 +547,24 @@ void AliAnalysisTaskSEXic0Semileptonic::UserExec(Option_t*)
 	//INEL>0 effect check histograms
 	if (IsMC == false)
 	{
-        for (int a=0; a<2; a++)
-        {
-            const char* fHistName = Form("hINELLgt0_%i", a);
-            if (a==1 && fIsINELLgtZERO==false) continue;
+		for (int a=0; a<2; a++)
+		{
+			const char* fHistName = Form("hINELLgt0_%i", a);
+			if (a==1 && fIsINELLgtZERO==false) continue;
 
-            if (inputHandler->IsEventSelected() & AliVEvent::kINT7)
-            {
-                fHistos->FillTH1(fHistName, 0.);
-                if (fCentrality >=  0.0 && fCentrality <= 100.0) fHistos->FillTH1(fHistName, 1.);
-                if (fCentrality >=  0.1 && fCentrality <=  30.0) fHistos->FillTH1(fHistName, 2.);
-                if (fCentrality >= 30.0 && fCentrality <= 100.0) fHistos->FillTH1(fHistName, 3.);
-            }
-            if (inputHandler->IsEventSelected() & AliVEvent::kHighMultV0)
-            {
-                fHistos->FillTH1(fHistName, 4.);
-                if (fCentrality >= 0.0 && fCentrality <= 0.1) fHistos->FillTH1(fHistName, 5.);
-            }
-        }//a, trig and trig+INEL>0
+			if (inputHandler->IsEventSelected() & AliVEvent::kINT7)
+			{
+				fHistos->FillTH1(fHistName, 0.);
+				if (fCentrality >=  0.0 && fCentrality <= 100.0) fHistos->FillTH1(fHistName, 1.);
+				if (fCentrality >=  0.1 && fCentrality <=  30.0) fHistos->FillTH1(fHistName, 2.);
+				if (fCentrality >= 30.0 && fCentrality <= 100.0) fHistos->FillTH1(fHistName, 3.);
+			}
+			if (inputHandler->IsEventSelected() & AliVEvent::kHighMultV0)
+			{
+				fHistos->FillTH1(fHistName, 4.);
+				if (fCentrality >= 0.0 && fCentrality <= 0.1) fHistos->FillTH1(fHistName, 5.);
+			}
+		}//a, trig and trig+INEL>0
 	}//data only
 
 	//*****************************************************
@@ -1921,19 +1921,19 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineEventTree()
 	fTreeVariableNames[3] = "fNSPDTracklets"; //# of SPD tracklets
 	fTreeVariableNames[4] = "fNeXiPair";      //# of saved pairs for the event: NOT 0 if more than pair saved
 	fTreeVariableNames[5] = "fVtxZ";
-	fTreeVariableNames[6] = "fPileup"; //pileup in both MB/HMV0), 1 (MB pileup, HMV0 ok), and 2 (MB ok, HMV0 pileup)
+	fTreeVariableNames[6] = "fPileup"; //0 (no pileup in MB/HMV0), 1 (MB ok, HMV0 pileup) and 2 (MB pileup, HMV0 ok)
 
 	for (Int_t iVar=0; iVar<nVar; iVar++)
 	{
 		fEventTree->Branch(fTreeVariableNames[iVar].Data(),
-				           &fEventTreeVariable[iVar],
-						   Form("%s/F", fTreeVariableNames[iVar].Data())
-						   );
+				&fEventTreeVariable[iVar],
+				Form("%s/F", fTreeVariableNames[iVar].Data())
+				);
 	}
 
 	const Int_t nTargetTrig = fTargetTriggers.size();
 	if (nTargetTrig > 1) fEventTree->Branch("fTrigBit", &fEventTreeVarTrig, "fTrigBit/i");
-    fEventTree->Branch("fINEL", &fIsINELLgtZERO, "fINEL/O"); //The letter O. NOT a zero: boolean
+	fEventTree->Branch("fINEL", &fIsINELLgtZERO, "fINEL/O"); //The letter O. NOT a zero: boolean
 
 	return;
 }//DefineEventTree
