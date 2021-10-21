@@ -28,7 +28,7 @@ AliAnalysisTaskSEXic0Semileptonic *AddTaskXic0Semileptonic(
 	if (fcoll.Contains("PA")) ispa = true;
 	task->SetPA(ispa);
 
-	//Trigger to use: kINT7 is default but can be disable if needed
+	//Trigger to use: kINT7 is default but can be disabled if needed
 	task->UseTrig_kINT7();
 	if (UseTrigHM)
 	{

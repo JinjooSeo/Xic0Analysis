@@ -1,6 +1,20 @@
 # Xic0Analysis
 Xic0 analysis code
 
+Oct. 21 (kimc)
+
+	- AliAnalysistask... .cxx
+		a. Now updated pileup cut (MV) works properly for both MV and HMV0
+		b. DEBUG: there was a bug in saving EventTree info -
+		   it's likely substantial eXi pairs have been lost since last September (2020)
+
+	- AddTaskXic0Semileptonic.C
+		a. By default "UseTrigHM" is on
+		b. Masked out HMSPD trigger
+
+	- macro_kimc/Xi0cAnaMakeRoot.C
+		now check pileup status by trigger by using variable EventTree->fPileup
+
 //-----------------------------------------------
 
  Oct. 1 (kimc)

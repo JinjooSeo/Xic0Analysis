@@ -4,29 +4,28 @@
 #ifndef AliAnalysisTaskSEXic0Semileptonic_H
 #define AliAnalysisTaskSEXic0Semileptonic_H
 
-#include "TROOT.h"
-#include "TVector.h"
-#include "TVector2.h"
-#include "TSystem.h"
-#include "TProfile.h"
-#include "THistManager.h"
-#include "AliAnalysisTaskSE.h"
 #include "AliAODEvent.h"
-#include "AliESDEvent.h"
-#include "AliPID.h"
-#include "AliPIDResponse.h"
-#include "AliPIDCombined.h"
-#include "AliRDHFCuts.h"
 #include "AliAODMCParticle.h" //kimc, Mar. 18
 #include "AliAODRecoDecayHF.h"
+#include "AliAnalysisTaskSE.h"
+#include "AliESDEvent.h"
 #include "AliNormalizationCounter.h"
+#include "AliPID.h"
+#include "AliPIDCombined.h"
+#include "AliPIDResponse.h"
+#include "AliRDHFCuts.h"
 #include "AliRDHFCutsXictoeleXifromAODtracks.h"
-#include <vector>
+
+#include "THistManager.h"
+#include "TProfile.h"
+#include "TROOT.h"
+#include "TSystem.h"
+#include "TVector.h"
+#include "TVector2.h"
 
 #include <iostream>
+#include <vector>
 using namespace std;
-
-class AliNormalizationCounter;
 
 class AliAnalysisTaskSEXic0RunTable
 {

@@ -846,8 +846,11 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 
 		//Check pileup status by trigger: 0 (both ok), 1 (MB ok, HMV0 x), and 2 (MB x, HMV0 ok)
 		Bool_t PileupStat = false;
-		if      ( !strcmp(TRIG, "MB")   && ((int)fPileup > 1) )    PileupStat = true;
-		else if ( !strcmp(TRIG, "HMV0") && ((int)fPileup%2 != 0) ) PileupStat = true;
+		if ( (int)fPileup != 0 )
+		{
+			if      ( !strcmp(TRIG, "MB")   && (int)fPileup!=1 ) PileupStat = true;
+			else if ( !strcmp(TRIG, "HMV0") && (int)fPileup!=2 ) PileupStat = true;
+		}
 		if (IsMC==false && PileupStat==true) continue;
 
         //Multiplicity percentile, apply only to the data
