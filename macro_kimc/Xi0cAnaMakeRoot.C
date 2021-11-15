@@ -46,10 +46,12 @@ void Xi0cAnaMakeRoot(
 		const char* TRIG = "MB", //MB, HMV0, or HMSPD
 		const double Perc0 = 0.0,
 		const double Perc1 = 100,
-		const bool MCWeight = false,
+		const bool MCWeight = true,
 		const bool INELLgt0 = false
 		)
 {
+	cout <<"\nWARNING!!! Multiplicity cut is currently off: for xCheck in Nov. 15, 2021\n";
+
 	const char* SDIR = "PWG3_D2H_Xic02eXipp13TeV_HM"; //Sub directory in the file
 	double MultPerc[2] = {Perc0, Perc1}; //Multiplicity percentile
 	double WFitPars[2] = {0.}; //Weighting fit parameters for MC
@@ -100,8 +102,8 @@ void Xi0cAnaMakeRoot(
 
 	//Output file name
 	TString outName;
-	if (IsMC && MCWeight==false) outName = Form("out_%s_raw.root", TYPE);
-	else outName = Form("out_%s_%s_%2.1fto%2.1f.root", TYPE, TRIG, Perc0, Perc1);
+	if (IsMC && MCWeight==false) outName = Form("out_%s%s_raw.root", TYPE, INELLgt0?"INEL0":"");
+	else outName = Form("out_%s%s_%s_%2.1fto%2.1f.root", TYPE, INELLgt0?"INEL0":"", TRIG, Perc0, Perc1);
 	outName.ReplaceAll("0.1", "0p1");
 	outName.ReplaceAll("0.0", "0");
 
@@ -855,7 +857,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR,
 
         //Multiplicity percentile, apply only to the data
         const Float_t tempMP = fCentrality;
-        if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
+        //if ( IsMC==false && (tempMP<MultPerc[0] || tempMP>MultPerc[1]) ) continue;
 
 		//INEL > 0 only, updated at June 8 (2021)
 		if ( INELLgt0==true && fINEL==false ) continue;

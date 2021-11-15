@@ -34,8 +34,8 @@
 #include <map>
 using namespace std;
 
-//---------------------------------------------------------
-double GetNormFac(const char* inFile, const char* ANC_name)
+//----------------------------------------------------------------------------
+double GetNormFac(const char* inFile, const char* ANC_name, bool Show = false)
 {
 	//Check if original train output file exists
 	TFile* F = TFile::Open(inFile);
@@ -47,31 +47,11 @@ double GetNormFac(const char* inFile, const char* ANC_name)
 	if (!ANC) {	cout <<Form("Cannot find ANC object %s/%s! Stop.\n", SDIR, ANC_name); return -999.; }
 
 	const double fNorm = ANC->GetNEventsForNorm();
-	cout <<Form("Normalization factor from %s: %10.9f x 1.e9\n", ANC_name, fNorm/1.e9);
+	if (Show) cout <<Form("Normalization factor from %s: %10.9f x 1.e9\n", ANC_name, fNorm/1.e9);
 
 	F->Close();
 	return fNorm;
 }//GetNormFac (from ANC)
-
-//----------------------------------------------------------------
-double GetRunFrac(TH1F* H1, int RunS, int RunE, bool Show = false) //S: start, E: end
-{
-	const int LimLo = H1->GetXaxis()->GetBinLowEdge(1);
-	const int LimUp = H1->GetXaxis()->GetBinUpEdge(H1->GetNbinsX());
-	if (RunS<LimLo || RunE>LimUp) { cout <<Form("Out of range [%i, %i]: stop.\n", LimLo, LimUp); return -999.; }
-
-	//Get fraction of given run range in the given H1
-	const int BinS = H1->GetXaxis()->FindBin(RunS + 0.1);
-	const int BinE = H1->GetXaxis()->FindBin(RunE - 0.1);
-	const double Yield_part = H1->Integral(BinS, BinE);
-	const double Yield_full = H1->Integral();
-
-	double Frac = -999;
-	if (Yield_part>=0 && Yield_full!=0) Frac = Yield_part/Yield_full;
-	if (Show) cout <<Form("Fraction of [%i, %i] in the [%i, %i]: %4.3f\n", RunS, RunE, LimLo, LimUp, Frac);
-
-	return Frac;
-}//GetRunFrac
 
 //-------------------------------------------------
 double GetV0xSec(int Year, const char* Type = "pp")
@@ -198,7 +178,7 @@ TH1D* ReadCMSLb(const char* inFile, bool Show = false)
 //--------------------------------------------------------------
 TH1D* ReadFONLL(const char* inFile, TH1D* H1, bool Show = false)
 {
-	TH1D* H1FONLL = new TH1D(Form("H1_%s", inFile), ";pT", 210, 0, 21); //Finer binning to avoid override
+	TH1D* H1FONLL = new TH1D(Form("H1_%s", inFile), ";pT", 210, 0, 21); //Finer binning to avoid overriding
 
 	//Read txt file
 	int Count = 0;
@@ -278,20 +258,20 @@ TH1D* ReadFONLL(const char* inFile, TH1D* H1, bool Show = false)
 
 //-------------------
 void ApplyBottomCorr(
-		TFile* F_MC, TH1D* H1,
+		TH1D* H1, TFile* F_MC,
 		const double BRFrac, const double NormF, const double V0xs,
 		const char* Cut, const char* CutFlag, bool Show = false
 		)
 {
 	//Get CMS 7 TeV Lambda_b and fit it w/ Tsallis
-	TH1D* H1_CMSLb = ReadCMSLb("CMSLb.root");//, Show);
+	TH1D* H1_CMSLb = ReadCMSLb("./input/HEPData-ins1113442-v1-Table_2.root");
 	TF1* fTsallis = new TF1("Tsallis", "[0]*x*(pow(1+(sqrt(pow(x,2)+pow(5.619,2))-5.619)/(7.6*1.1),-7.6))", 0,50);
 	H1_CMSLb->Fit("Tsallis", "0");
 	fTsallis->SetParameters(fTsallis->GetParameters());
 
 	//Get ratio of Lambda_b btw 13/7 TeV
-	TH1D* H1_FONLL_7 = ReadFONLL("FONLL_7.txt", H1);//, Show);
-	TH1D* H1_FONLL_13 = ReadFONLL("FONLL_13.txt", H1);//, Show);
+	TH1D* H1_FONLL_7 = ReadFONLL("./input/FONLL-Bmeson-dsdpt-sqrts7000-20GeV.txt", H1);
+	TH1D* H1_FONLL_13 = ReadFONLL("./input/FONLL-Bmeson-dsdpt-sqrts13000-20GeV.txt", H1);
 	TH1D* H1_FONLL_13to7 = (TH1D*)H1_FONLL_13->Clone("FONLL_13to7");
 	H1_FONLL_13to7->Divide(H1_FONLL_7);
 
@@ -538,11 +518,8 @@ TH1D* ApplyXic0Eff(
 	return H1R;
 }//ApplyXic0Eff
 
-//----------
-TH1D* GetXS(
-		TH1D* H1, double normF, double V0xSec, double Xic0SemiLBR,
-		const char* Suffix, float xMin = -999., float xMax = 999.
-		)
+//--------------------------------------------------------------------------------------
+TH1D* GetXS(TH1D* H1, double normF, double V0xSec, double BRXic0eXi, const char* Suffix)
 {
 	TH1D* H1R = (TH1D*)H1->Clone(Form("Xic0XS_%s", Suffix));
 	H1R->SetTitle("");
@@ -550,8 +527,6 @@ TH1D* GetXS(
 
 	for (int a=0; a<H1->GetNbinsX(); a++)
 	{
-		if (H1->GetBinCenter(a+1) < xMin || H1->GetBinCenter(a+1) > xMax) continue;
-
 		const double Val = H1->GetBinContent(a+1);
 		const double Err = H1->GetBinError(a+1);
 
@@ -559,7 +534,7 @@ TH1D* GetXS(
 		const double CConj  = 2.; //e-Xi pair charge conjugate
 		const double DeltaY = 1.;
 		const double IntL   = normF/V0xSec;
-		const double xSecF  = BinW * CConj * DeltaY * IntL * Xic0SemiLBR;
+		const double xSecF  = BinW * CConj * DeltaY * IntL * BRXic0eXi;
 
 		H1R->SetBinContent(a+1, Val/xSecF);
 		H1R->SetBinError  (a+1, Err/xSecF);
@@ -568,17 +543,282 @@ TH1D* GetXS(
 	return H1R;
 }//GetXS
 
-//-------------------
-void ApplyPromptFrac()
+//----------------------------------------------------------------------------------
+void ApplyPromptFrac(TH1D* H1Xsec, TFile* F_MC, double BRXic0eXi, bool Show = false)
 {
+	enum {AVG, MAX, MIN};
+	enum {FDDOWN, PROMPT};
+	const float LcFddownScaleF = 1.E-6/(0.0628 * 20); //pb to ub and divide by Lc2pKpi BR (PDG2020) + binning
 
+	/*
+	   Procedures
+
+	   1. Preparation:
+
+	   		a. Two Xic0 efficiency: feed-down and prompt
+			b. Three Lc distributions from external source: central (avg), max, and min
+			c. Get Xic0 - Lc ratio by using pol1 fit on Xic0-Lc raito from external source
+			d. Xic0 feed-down distributions by using 'Lc' x 'Xic0-Lc ratio'
+				d-1) 3 variations by Lc
+				d-2) 3 variations by Xic0-Lc ratio
+
+		2. Get prompt fraction:
+
+			a. Get ' inclusive Xic0 x inclusive eff ', from previous step
+			b. Get ' feed-dwon Xic0 x feed-down eff '
+			c. Get ratio of feed-down/inclusive by using 2-a. and 2-b.
+			d. Get prompt fraction: " 1.0 - c., pT bin by pT bin "
+	*/
+
+	//Get original binning from xSec histogram
+	vector<float> pTVec;
+	for (int a=0; a<H1Xsec->GetNbinsX(); a++)
+	{
+		pTVec.push_back( H1Xsec->GetXaxis()->GetBinLowEdge(a+1) );
+		if (a+1 == H1Xsec->GetNbinsX()) pTVec.push_back( H1Xsec->GetXaxis()->GetBinUpEdge(a+1) );
+	}
+	double pTBins[pTVec.size()];
+	for (unsigned int a=0; a<pTVec.size(); a++) pTBins[a] = pTVec[a];
+	const double* pTBinsFix = pTBins;
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	//1 - a. Xic0 efficiency by MC, separated by feeddown or prompt 
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	//Originally uses MC unweighted - why? (Tested: MCraw = MC_MB_0to100 = MC_HMV0_0to0p1)
+	//TFile* F_MC = TFile::Open("out_MC_raw.root");
+	TH1D* H1_Xic0EffSep[2]; //Jinjoo: hFeeddownEff, hPromptEff
+	for (int a=0; a<2; a++)
+	{
+		const char* Histo_d = (a==FDDOWN)?"hMCGenFeeddowmXic0_woW":"hMCGenPromptXic0_woW";
+		const char* Histo_n = (a==FDDOWN)?"hnonprompt":"hprompt";
+		TH1D* H1_Xic0Eff_d = (TH1D*)F_MC->Get(Histo_d);
+		TH1D* H1_Xic0Eff_n = (TH1D*)F_MC->Get(Histo_n);
+
+		H1_Xic0EffSep[a] = (TH1D*)H1_Xic0Eff_n->Clone(Form("PF_Xic0Eff_%i", a)); H1_Xic0EffSep[a]->Reset();
+		H1_Xic0EffSep[a]->SetTitle(Form("Xic0Eff_%s", a==FDDOWN?"feed-down":"prompt"));
+		H1_Xic0EffSep[a]->Divide(H1_Xic0Eff_n, H1_Xic0Eff_d, 1, 1, "b");
+
+		H1_Xic0Eff_d->Delete();
+		H1_Xic0Eff_n->Delete();
+	}//a
+
+	//1 - b. Feeddown Lc
+	//+++++++++++++++++++++++++++++++++++++++++++
+
+	TFile* F_MC_LcFddown = TFile::Open("./input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+	vector<const char*> v_LcFddown = 
+	{
+		"hLcpkpifromBpred_central_corr",
+		"hLcpkpifromBpred_max_corr", //hFeeddownLcFONLL + FFMax
+		"hLcpkpifromBpred_min_corr", //hFeeddownLcFONLL + FFMin
+	};
+	const int n_LcFddown = v_LcFddown.size();
+
+	TH1D* H1_LcFddown[n_LcFddown]; //Jinjoo: hFeeddownLc
+	for (int a=0; a<n_LcFddown; a++)
+	{
+		TH1D* H1_LcFddown_orig = (TH1D*)F_MC_LcFddown->Get(v_LcFddown[a]);
+		TH1D* H1_LcFddown_rb = (TH1D*)H1_LcFddown_orig->Rebin(pTVec.size()-1, Form("PF_LcFddown_%i",a), pTBinsFix);
+		H1_LcFddown_rb->Scale(LcFddownScaleF);
+
+		H1_LcFddown[a] = (TH1D*)H1_LcFddown_rb->Clone(); H1_LcFddown[a]->Reset();
+		for (unsigned int b=0; b<pTVec.size(); b++)
+		{
+			const double val = H1_LcFddown_rb->GetBinContent(b+1) / H1_LcFddown_rb->GetBinWidth(b+1);
+			const double err = H1_LcFddown_rb->GetBinError  (b+1) / H1_LcFddown_rb->GetBinWidth(b+1);
+			H1_LcFddown[a]->SetBinContent(b+1, val);
+			H1_LcFddown[a]->SetBinError  (b+1, err);
+		}//b, pTBins
+
+		H1_LcFddown_orig->Delete();
+		H1_LcFddown_rb  ->Delete();
+	}//a, LcFddown
+
+	//1 - c. Xic0 to Lc ratio, get pol1 parameters vs. pT
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	TFile* F_MC_Xic0ToLc = TFile::Open("./input/Xic0toLc_pp13TeV_new.root");
+	TH1D* H1_Xic0ToLc = (TH1D*)F_MC_Xic0ToLc->Get("hRatio_Xic0toLc"); //Jinjoo: hRatioXicLc
+
+	const float FitX0 = H1_Xic0ToLc->GetXaxis()->GetBinLowEdge(1);
+	const float FitX1 = H1_Xic0ToLc->GetXaxis()->GetBinUpEdge(H1_Xic0ToLc->GetNbinsX());
+
+	TF1* F1_Xic0ToLc = new TF1("F1_Xic0ToLc", "pol1");//, FitX0, FitX1); //Jinjoo: fFitFunction
+	TF1* F1_Xic0ToLcMax = new TF1("F1_Xic0ToLcMax", "pol1");
+	TF1* F1_Xic0ToLcMin = new TF1("F1_Xic0ToLcMin", "pol1");
+
+	H1_Xic0ToLc->Fit(F1_Xic0ToLc->GetName(), "QL0", "kBlack", FitX0, FitX1);
+	F1_Xic0ToLcMax->SetParameters(F1_Xic0ToLc->GetParameter(0)*2., F1_Xic0ToLc->GetParameter(1)*2.);
+	F1_Xic0ToLcMin->SetParameters(F1_Xic0ToLc->GetParameter(0)/2., F1_Xic0ToLc->GetParameter(1)/2.);
+
+	//1-d-1) Feeddown Xic0, variation by Lc + fixed Xic0ToLc ratio
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	vector<const char*> v_Xic0FddownVarLc = 
+	{
+		"hFeeddownXic0_LcAvg",
+		"hFeeddownXic0_LcMax",
+		"hFeeddownXic0_LcMin"
+	};
+	const int n_Xic0FddownVarLc = v_Xic0FddownVarLc.size();
+
+	TH1D* H1_Xic0FddownVarLc[n_Xic0FddownVarLc]; //Jinjoo: hFeeddownXicVarLc
+	for (int a=0; a<n_Xic0FddownVarLc; a++)
+	{
+		H1_Xic0FddownVarLc[a] = (TH1D*)H1_LcFddown[a]->Clone(v_Xic0FddownVarLc[a]);
+		H1_Xic0FddownVarLc[a]->Reset();
+
+		for (int b=0; b<H1_Xic0FddownVarLc[a]->GetNbinsX(); b++)
+		{
+			const float LcBinVal    = H1_LcFddown[a]->GetBinContent(b+1);
+			const float LcBinErr    = H1_LcFddown[a]->GetBinError(b+1);
+			const float LcBinCenter = H1_LcFddown[a]->GetBinCenter(b+1);
+			const float Xic0ToLcR   = F1_Xic0ToLc->Eval(LcBinCenter);
+			H1_Xic0FddownVarLc[a]->SetBinContent(b+1, LcBinVal * Xic0ToLcR);
+			H1_Xic0FddownVarLc[a]->SetBinError  (b+1, LcBinErr * Xic0ToLcR);
+		}//b
+	}//a, Xic0FddownVarLc
+
+	//1-d-2) Feeddown Xic0, fixed Lc + variation by Xic0ToLc ratio
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	vector<const char*> v_Xic0FddownVarR = 
+	{
+		"hFeeddownXic0_RatioAvg",
+		"hFeeddownXic0_RatioMax",
+		"hFeeddownXic0_RatioMin"
+	};
+	const int n_Xic0FddownVarR = v_Xic0FddownVarR.size();
+
+	TH1D* H1_Xic0FddownVarR[n_Xic0FddownVarR]; //Jinjoo: hFeeddownXicVarRatio
+	for (int a=0; a<n_Xic0FddownVarR; a++)
+	{
+		H1_Xic0FddownVarR[a] = (TH1D*)H1_LcFddown[AVG]->Clone(v_Xic0FddownVarR[a]);
+		H1_Xic0FddownVarR[a]->Reset();
+
+		for (int b=0; b<H1_Xic0FddownVarR[a]->GetNbinsX(); b++)
+		{
+			const float LcBinVal    = H1_LcFddown[AVG]->GetBinContent(b+1);
+			const float LcBinErr    = H1_LcFddown[AVG]->GetBinError(b+1);
+			const float LcBinCenter = H1_LcFddown[AVG]->GetBinCenter(b+1);
+			float Xic0ToLcR = 9999;
+			if      (a==AVG) Xic0ToLcR = F1_Xic0ToLc->Eval(LcBinCenter);
+			else if (a==MAX) Xic0ToLcR = F1_Xic0ToLcMax->Eval(LcBinCenter);
+			else if (a==MIN) Xic0ToLcR = F1_Xic0ToLcMin->Eval(LcBinCenter);
+			H1_Xic0FddownVarR[a]->SetBinContent(b+1, LcBinVal * Xic0ToLcR);
+			H1_Xic0FddownVarR[a]->SetBinError  (b+1, LcBinErr * Xic0ToLcR);
+		}
+	}//
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	//Xic0 prompt fraction, variation by Lc
+	//+++++++++++++++++++++++++++++++++++++++++++
+
+	TH1D* H1_Xic0PromptVarLc[n_Xic0FddownVarLc];
+	for (int a=0; a<n_Xic0FddownVarLc; a++)
+	{
+		H1_Xic0PromptVarLc[a] = (TH1D*)H1_LcFddown[a]->Clone(v_Xic0FddownVarLc[a]);
+		H1_Xic0PromptVarLc[a]->SetTitle(Form("Xic0 prompt frac, variation by base Lc, %i", a));
+		H1_Xic0PromptVarLc[a]->Reset();
+
+		for (int b=0; b<H1_Xic0PromptVarLc[a]->GetNbinsX(); b++)
+		{
+			H1_Xic0PromptVarLc[a]->SetBinContent(b+1, 1);
+			H1_Xic0PromptVarLc[a]->SetBinError  (b+1, 0);
+		}//b
+
+		TH1D* H1_xSecEff_inc = (TH1D*)H1Xsec->Clone(Form("%s_temp%i", H1Xsec->GetName(), a)); //xSec_inc * eff_inc
+		TH1D* H1_xSecEff_fdn = (TH1D*)H1_Xic0FddownVarLc[a]->Clone(Form("%s_temp%i", v_Xic0FddownVarLc[a], a));
+		TH1D* H1_xSecEff_fdnFrac = (TH1D*)H1_xSecEff_fdn->Clone(Form("xSecEff_varLc_fdnFrac%i", a));
+		H1_xSecEff_fdnFrac->Reset();
+		H1_xSecEff_fdnFrac->Divide(H1_xSecEff_fdn, H1_xSecEff_inc, 1, 1, "b");
+
+		H1_Xic0PromptVarLc[a]->Add(H1_xSecEff_fdnFrac, -1); //Jinjoo: 1.73 or 1, NEED TO CONFIRM
+
+		H1_xSecEff_inc->Delete();
+		H1_xSecEff_fdn->Delete();
+		H1_xSecEff_fdnFrac->Delete();
+	}//a
+
+	//Xic0 prompt fraction, variation by Xic0ToLc ratio (systematic?)
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	TH1D* H1_Xic0PromptVarR[n_Xic0FddownVarR];
+	for (int a=0; a<n_Xic0FddownVarR; a++)
+	{
+		H1_Xic0PromptVarR[a] = (TH1D*)H1_LcFddown[a]->Clone(v_Xic0FddownVarR[a]);
+		H1_Xic0PromptVarR[a]->SetTitle(Form("Xic0 prompt frac, variation by Xic0/Lc ratio, %i", a));
+		H1_Xic0PromptVarR[a]->Reset();
+
+		for (int b=0; b<H1_Xic0PromptVarR[a]->GetNbinsX(); b++)
+		{
+			H1_Xic0PromptVarR[a]->SetBinContent(b+1, 1);
+			H1_Xic0PromptVarR[a]->SetBinError  (b+1, 0);
+		}//b
+
+		TH1D* H1_xSecEff_inc = (TH1D*)H1Xsec->Clone(Form("%s_temp%i", H1Xsec->GetName(), a)); //xSec_inc * eff_inc
+		TH1D* H1_xSecEff_fdn = (TH1D*)H1_Xic0FddownVarR[a]->Clone(Form("%s_temp%i", v_Xic0FddownVarR[a], a));
+		TH1D* H1_xSecEff_fdnFrac = (TH1D*)H1_xSecEff_fdn->Clone(Form("xSecEff_varLc_fdnFrac%i", a));
+		H1_xSecEff_fdnFrac->Reset();
+		H1_xSecEff_fdnFrac->Divide(H1_xSecEff_fdn, H1_xSecEff_inc, 1, 1, "b");
+
+		H1_Xic0PromptVarR[a]->Add(H1_xSecEff_fdnFrac, -1); //Jinjoo: 1.73 or 1, NEED TO CONFIRM
+
+		H1_xSecEff_inc->Delete();
+		H1_xSecEff_fdn->Delete();
+		H1_xSecEff_fdnFrac->Delete();
+	}//a
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	if (Show)
+	{
+		TCanvas* c1 = new TCanvas("c1d_0", "", 1600, 1000); c1->Divide(3, 2);
+		c1->cd(1); H1_Xic0EffSep[0]->DrawCopy("hist e text90");
+		c1->cd(2); H1_Xic0EffSep[1]->DrawCopy("hist e text90");
+		c1->cd(3); H1_Xic0ToLc->DrawCopy("hist e text90");
+		c1->cd(4); H1_LcFddown[0]->DrawCopy("hist e text90");
+		c1->cd(5); H1_LcFddown[1]->DrawCopy("hist e text90");
+		c1->cd(6); H1_LcFddown[2]->DrawCopy("hist e text90");
+
+		TCanvas* c2 = new TCanvas("c1d_1", "", 1600, 1000); c2->Divide(3, 2);
+		c2->cd(1); H1_Xic0FddownVarLc[0]->DrawCopy("hist e");
+		c2->cd(2); H1_Xic0FddownVarLc[1]->DrawCopy("hist e");
+		c2->cd(3); H1_Xic0FddownVarLc[2]->DrawCopy("hist e");
+		c2->cd(4); H1_Xic0FddownVarR[0]->DrawCopy("hist e");
+		c2->cd(5); H1_Xic0FddownVarR[1]->DrawCopy("hist e");
+		c2->cd(6); H1_Xic0FddownVarR[2]->DrawCopy("hist e");
+
+		TCanvas* c3 = new TCanvas("c1d_2", "", 1600, 1000); c3->Divide(3, 2);
+		c3->cd(1); H1_Xic0PromptVarLc[0]->DrawCopy("hist e text90");
+		c3->cd(2); H1_Xic0PromptVarLc[1]->DrawCopy("hist e text90");
+		c3->cd(3); H1_Xic0PromptVarLc[2]->DrawCopy("hist e text90");
+		c3->cd(4); H1_Xic0PromptVarR[0]->DrawCopy("hist e text90");
+		c3->cd(5); H1_Xic0PromptVarR[1]->DrawCopy("hist e text90");
+		c3->cd(6); H1_Xic0PromptVarR[2]->DrawCopy("hist e text90");
+
+		//c1->Print(Form("%s.png", c1->GetName()));
+		//c2->Print(Form("%s.png", c2->GetName()));
+		//c3->Print(Form("%s.png", c3->GetName()));
+	}
+
+	//APPLY PROMPT FRACTION TO XSEC
+	cout <<"Applying prompt fraction...\n";
+	H1Xsec->Multiply(H1_Xic0PromptVarLc[AVG]);
+
+	//Cleanup
+	F_MC_LcFddown->Close();
+	F_MC_Xic0ToLc->Close();
 	return;
 }//ApplyPromptFrac
 
 //----------------------
 void GetWeightingFactor(
 		TH1D* H1XS_data, const char* Suffix,
-		float xMin = -999., float xMax = 999.,
+		float xMin = 0., float xMax = 20.,
 		bool Show = true
 		)
 {
@@ -599,33 +839,51 @@ void GetWeightingFactor(
 
 	//+++++++++++++++++++++++++++++++++++++++++++
 
-	//Data/MC histograms
-	enum {DATA, MC};
+	enum {DT, MC};
 	TH1D* H1xs[2];
 	for (int a=0; a<2; a++) //data or MC
 	{
-		if (a==DATA) H1xs[a] = (TH1D*)H1XS_data->Clone("pTW_data");
-		else         H1xs[a] = (TH1D*)H1XS_mc->Clone("pTW_mc");
-
-		//Apply x range + normalization by bin width
-		for (int b=0; b<H1xs[a]->GetNbinsX(); b++)
+		if (a==DT) H1xs[a] = (TH1D*)H1XS_data->Clone("pTW_data"); //Already normalized by bin width in xs routine
+		else
 		{
-			if (H1xs[a]->GetBinCenter(b+1)<xMin || H1xs[a]->GetBinCenter(b+1)>xMax) 
-			{
-				H1xs[a]->SetBinContent(b+1, 0);
-				H1xs[a]->SetBinError(b+1, 0);
-			}
-			if (fabs(H1xs[a]->GetBinWidth(b+1) - 1) > 1.E-5)
+			H1xs[a] = (TH1D*)H1XS_mc->Clone("pTW_mc");
+
+			//Normalization by bin width
+			for (int b=0; b<H1xs[a]->GetNbinsX(); b++)
 			{
 				const double BinC = H1xs[a]->GetBinContent(b+1);
 				const double BinE = H1xs[a]->GetBinError(b+1);
 				const double BinW = H1xs[a]->GetBinWidth(b+1);
 				H1xs[a]->SetBinContent(b+1, BinC/BinW);
-				H1xs[a]->SetBinError(b+1, BinE/BinW);
+				H1xs[a]->SetBinError  (b+1, BinE/BinW);
 			}
-		}//b, loop over bins
+		}//a==MC
 
-		//Normalization by self integral
+		for (int b=0; b<H1xs[a]->GetNbinsX(); b++)
+		{
+			const float xLo = H1xs[a]->GetXaxis()->GetBinLowEdge(b+1);
+			const float xUp = H1xs[a]->GetXaxis()->GetBinUpEdge(b+1);
+			if (xLo<xMin || xUp>xMax)
+			{
+				H1xs[a]->SetBinContent(b+1, 0);
+				H1xs[a]->SetBinError  (b+1, 0);
+			}
+		}//b
+
+
+		/*
+		//Set range
+		if (xMin>0. || xMax<20.)
+		{
+			const int xMinB = H1xs[a]->GetXaxis()->FindBin(xMin + 1.E-3);
+			const int xMaxB = H1xs[a]->GetXaxis()->FindBin(xMax - 1.E-3);
+			const float xMinV = H1xs[a]->GetXaxis()->GetBinLowEdge(xMinB);
+			const float xMaxV = H1xs[a]->GetXaxis()->GetBinUpEdge(xMaxB);
+			H1xs[a]->GetXaxis()->SetRangeUser(xMinV, xMaxV);
+		}
+		*/
+
+		//Normalization by self integral: checked the value changes w/ range
 		const double INTEGRAL = H1xs[a]->Integral();
 		H1xs[a]->Scale(1./INTEGRAL);
 	}//a
@@ -633,45 +891,54 @@ void GetWeightingFactor(
 	//Ratio
 	enum {CT, UD, DU}; //Center, Updown, and Downup
 	TH1D* H1Ratio[3];
-	TF1* F1Ratio[3];
+	TF1*  F1Ratio[3];
 	for (int a=0; a<3; a++)
 	{
 		if (a==CT)
 		{
-			H1Ratio[a] = (TH1D*)H1xs[DATA]->Clone(Form("pTW_ratio%i", a));
+			H1Ratio[a] = (TH1D*)H1xs[DT]->Clone(Form("pTW_ratio%i", a));
 			H1Ratio[a]->Divide(H1xs[MC]);
 		}
-		else
+		else //UD, DU
 		{
-			H1Ratio[a] = (TH1D*)H1Ratio[CT]->Clone(Form("pTW_ratio%i", a));
-			H1Ratio[a]->Sumw2(false);
-			H1Ratio[a]->Reset();
+			const int pTBinN = H1Ratio[CT]->GetNbinsX(); double pTBin[pTBinN];
+			for (int x=0; x<pTBinN+1; x++) pTBin[x] = H1Ratio[CT]->GetXaxis()->GetBinLowEdge(x+1);
 
-			for (int b=0; b<H1Ratio[CT]->GetNbinsX(); b++)
+			H1Ratio[a] = new TH1D();
+			H1Ratio[a]->SetBins(pTBinN, pTBin);
+			H1Ratio[a]->SetName(Form("pTW_ratio%i", a));
+
+			for (int b=0; b<pTBinN; b++)
 			{
-				const float pT  = H1Ratio[CT]->GetBinCenter(b+1);
+				const float pT  = H1Ratio[CT]->GetBinCenter (b+1);
 				const float Val = H1Ratio[CT]->GetBinContent(b+1);
-				const float Err = H1Ratio[CT]->GetBinError(b+1); //There's no reason the error to be asymmetric
+				const float Err = H1Ratio[CT]->GetBinError  (b+1);
+
 				if (pT < 4.0)
 				{
 					if (a==UD) H1Ratio[a]->SetBinContent(b+1, Val + Err);
 					if (a==DU) H1Ratio[a]->SetBinContent(b+1, Val - Err);
 				}
-				else if (pT < 5.0) H1Ratio[a]->SetBinContent(b+1, Val);
+				else if (pT < 5.0) //Anchor point: 4 < pT < 5
+				{
+					H1Ratio[a]->SetBinContent(b+1, Val);
+				}
 				else
 				{
 					if (a==UD) H1Ratio[a]->SetBinContent(b+1, Val - Err);
 					if (a==DU) H1Ratio[a]->SetBinContent(b+1, Val + Err);
 				}
 			}//b
-		}//UD and DU
+		}//UD, DU
 
+		//Fit
 		F1Ratio[a] = new TF1(Form("F1Ratio_%i", a), "expo", xMin, xMax);
 		H1Ratio[a]->Fit(F1Ratio[a]->GetName(), "EQR0");
 	}//a
 
 	//+++++++++++++++++++++++++++++++++++++++++++
 
+#if 1
 	if (Show)
     {
         TCanvas* c1 = new TCanvas("c1", "", 1600, 1200/2);
@@ -726,6 +993,7 @@ void GetWeightingFactor(
 
         c1->Print(Form("%s.png", c1->GetName()));
     }//Show
+#endif
 
 	for (int a=0; a<3; a++) H1Ratio[a]->Delete();
 	for (int a=0; a<2; a++) H1xs[a]->Delete();
@@ -733,5 +1001,25 @@ void GetWeightingFactor(
 	F->Close();
 	return;
 }//GetWeightingFactor
+
+//--------------------------------------------------------------------
+TH1D* Cleanup(TH1D* H1, const float xMin = 0., const float xMax = 20.)
+{
+	TH1D* H1R = (TH1D*)H1->Clone(Form("%s_CLEANED", H1->GetName())); H1R->Reset();
+
+	for (int a=0; a<H1->GetNbinsX(); a++)
+	{
+		const float xPosLo = H1->GetXaxis()->GetBinLowEdge(a+1);
+		const float xPosUp = H1->GetXaxis()->GetBinUpEdge(a+1);
+		if (xPosLo<xMin || xPosUp>xMax) continue;
+
+		const double xVal = H1->GetBinContent(a+1);
+		const double xErr = H1->GetBinError(a+1);
+		H1R->SetBinContent(a+1, xVal);
+		H1R->SetBinError  (a+1, xErr);
+	}
+
+	return H1R;
+}//Cleanup
 
 #endif //XI0CANAFUNCTION
