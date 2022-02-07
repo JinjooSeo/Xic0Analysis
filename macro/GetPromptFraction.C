@@ -1,11 +1,11 @@
 //#include "DrawTool.C"
 
 TH1D* GetPromptFraction(TFile* UnweightedMCROOT, TFile* WeightedMCROOT, TH1D* hXic0CrossSection, TH1D* hInclusiveEff, Bool_t GetSysError, Bool_t DrawOption = kFALSE){
-  TFile* PythiaROOT;    PythiaROOT = TFile::Open("../input/HistogramXic.root");
-  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
-  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root"); //will be added but not important
-  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("../input/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root"); //will be added but not important
-  TFile* RatioXicLcROOT;    RatioXicLcROOT = TFile::Open("../input/Xic0toLc_pp13TeV_new.root");
+  TFile* PythiaROOT;    PythiaROOT = TFile::Open("HistogramXic.root");
+  TFile* FeeddownLcROOT;    FeeddownLcROOT = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* FeeddownLcROOTFONLLcent;    FeeddownLcROOTFONLLcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* FeeddownLcROOTFFcent;    FeeddownLcROOTFFcent = TFile::Open("DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root");
+  TFile* RatioXicLcROOT;    RatioXicLcROOT = TFile::Open("Xic0toLc_pp13TeV_new.root");
 
   TH1D** hFeeddownLc = new TH1D*[7];
   TH1D** hFeeddownXicVarLc = new TH1D*[7];
@@ -51,6 +51,7 @@ TH1D* GetPromptFraction(TFile* UnweightedMCROOT, TFile* WeightedMCROOT, TH1D* hX
   for(int i=0; i<7; i++) {
     hFeeddownLc[i] = (TH1D*) hFeeddownLc[i]->Rebin(7,NameOfFeeddownLc[i].Data(),ptbinning);
     hFeeddownLc[i]->Scale(1e-6/(0.0628*20)); //pb to ub and divide Lc2pKpi branching ratio (PDG2020) + binning
+    hFeeddownLc[i]->Scale(0.616);
     for(int j=1; j<8; j++){
       hFeeddownLc[i]->SetBinContent(j,hFeeddownLc[i]->GetBinContent(j)/(hFeeddownLc[i]->GetBinWidth(j)));
       hFeeddownLc[i]->SetBinError(j,hFeeddownLc[i]->GetBinError(j)/(hFeeddownLc[i]->GetBinWidth(j)));
@@ -152,16 +153,28 @@ TH1D* GetPromptFraction(TFile* UnweightedMCROOT, TFile* WeightedMCROOT, TH1D* hX
   TH1D* hfeedDumy = (TH1D*) hMCFeedDownXic0->Clone("hfeedDumy"); hfeedDumy->Multiply(hFeeddownEff_tmp);  //7
   TH1D* hPrDumy = (TH1D*) hMCPromptXic0->Clone("hPrDumy"); hPrDumy->Multiply(hPromptEff); //7
   TH1D* hIncDumy = (TH1D*) hXic0CrossSection->Clone("hIncDumy"); hIncDumy->Multiply(hInclusiveEff_tmp); //6
-//cout << "0" << endl;
+
   TH1D* hNbtmp = new TH1D("hNbtmp","",7,ptbinning);
   for (int i=1; i<8; i++){ hNbtmp->SetBinError(i,hfeedDumy->GetBinError(i)); hNbtmp->SetBinContent(i,hfeedDumy->GetBinContent(i)); }
   hNbtmp->Divide(hNbtmp,hIncDumy,1,1,"b");
   TH1D* hfc = (TH1D*) hPrDumy->Clone("hfc"); hfc->Add(hfeedDumy,1); hfc->Divide(hPrDumy,hfc,1,1,"b");
-//cout << "1" << endl;
+
   TH1D* hNb = new TH1D("hNb","",7,ptbinning);
   for (int i=1; i<8; i++){ hNb->SetBinError(i,0); hNb->SetBinContent(i,1); }
   hNb->Add(hNbtmp,-1);
-//cout << "2" << endl;
+
+
+  TFile *file = new TFile("PromptInput_middle.root","recreate");
+  hFeeddownLc[0]->Write();
+  hFeeddownXicVarLc[0]->Write();
+  hFeeddownEff->Write();
+  hPromptFractionVarLc[0]->Write();
+  hXic0CrossSection->Write();
+  hInclusiveEff->Write();
+  file->Write();
+  file->Close();
+
+
   if(DrawOption){
     SetStyle();
     int nCan = 13;
