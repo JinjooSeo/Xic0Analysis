@@ -1,6 +1,17 @@
 # Xic0Analysis
 Xic0 analysis code
 
+//-----------------------------------------------
+
+Feb. 7, 2022 (kimc)
+
+	- AliAnalysisTaskSEXic0Semileptonic.cxx
+		a. Added zVtx info to Xic tree (MCXicTree->fVtxZ_PV)
+		b. Addded zVtx is WRT primary vertex, NOT the cascade vertex (mcpart->Zv())
+		   (* http://alidoc.cern.ch/AliRoot/master/_ali_a_o_d_m_c_particle_8h_source.html#l00212)
+
+//-----------------------------------------------
+
 Oct. 21 (kimc)
 
 	- AliAnalysistask... .cxx

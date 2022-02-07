@@ -1049,8 +1049,8 @@ Bool_t AliAnalysisTaskSEXic0Semileptonic::FilterCascade(AliAODcascade *casc)
 		if (fabs(fPIDResponse->NumberOfSigmasTPC(b_pion,AliPID::kPion))>4) return kFALSE; //4
 	}
 
-	Double_t mLPDG = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
-	Double_t mxiPDG = TDatabasePDG::Instance()->GetParticle(3312)->Mass();
+	Double_t mLPDG = TDatabasePDG::Instance()->GetParticle(3122)->Mass(); //Lambda
+	Double_t mxiPDG = TDatabasePDG::Instance()->GetParticle(3312)->Mass(); //Charged Xi
 	Double_t massLambda = casc->MassLambda();
 	Double_t massAntiLambda = casc->MassAntiLambda();
 	Double_t massXi = casc->MassXi();
@@ -1137,7 +1137,8 @@ void AliAnalysisTaskSEXic0Semileptonic::FillMCXic0(AliAODMCParticle *mcpart)
 	Bool_t c_flag = kFALSE; //Xi-
 	Bool_t b_flag = kFALSE; //Xi-
 
-	for (int i=0; i<8; i++) fMCXicTreeVariable[i] = -9999.; //Reset
+	const int nMCXicTreeVariable = 9;
+	for (int i=0; i<nMCXicTreeVariable; i++) fMCXicTreeVariable[i] = -9999.; //Reset
 
 	AliAODMCParticle *MCe = 0;
 	AliAODMCParticle *MCcasc = 0;
@@ -1187,7 +1188,7 @@ void AliAnalysisTaskSEXic0Semileptonic::FillMCXic0(AliAODMCParticle *mcpart)
 	}
 	fHistos->FillTH1("hMCXic0AllRap", mcpart->Pt());
 
-	if (e_flag&&xi_flag)
+	if (e_flag && xi_flag)
 	{
 		Double_t pxe = MCe->Px(); Double_t pye = MCe->Py();
 		Double_t pxv = MCcasc->Px(); Double_t pyv = MCcasc->Py();
@@ -1203,6 +1204,7 @@ void AliAnalysisTaskSEXic0Semileptonic::FillMCXic0(AliAODMCParticle *mcpart)
 		fMCXicTreeVariable[5] = MCcasc->Y();
 		fMCXicTreeVariable[6] = c_flag;
 		fMCXicTreeVariable[7] = b_flag;
+		fMCXicTreeVariable[8] = mcpart->Zv(); //ckim, Feb. 8, 2022
 		fMCXicTree->Fill();
 
 		if (fabs(mcpart->Y())<0.5)
@@ -1919,7 +1921,8 @@ void AliAnalysisTaskSEXic0Semileptonic::DefineMCXicTree()
 	fMCXicTree = new TTree("MCXicTree","MCXicTree");
 	vector<TString> fTreeVariableName =
 	{
-		"Xic0_pT","e_pT","Xi_pT","Xic0_rap","e_rap","Xi_rap","c_flag","b_flag"
+		"Xic0_pT","e_pT","Xi_pT","Xic0_rap","e_rap","Xi_rap","c_flag","b_flag",
+		"fVtxZ_PV" //ckim, Feb. 8, 2022
 	};
 	fMCXicTreeVariable = new Float_t [fTreeVariableName.size()];
 
