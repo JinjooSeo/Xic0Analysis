@@ -736,12 +736,16 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
     TH1F* hMCGenPromptXic0_W = MakeTH1("hMCGenPromptXic0_W",(sizeof(binning2) / sizeof(binning2[0]))-1,binning2);
     TH1F* hMCGenFeeddowmXic0_W = MakeTH1("hMCGenFeeddowmXic0_W",(sizeof(binning2) / sizeof(binning2[0]))-1,binning2);
 
+    TH2F* hevseXi = MakeTH2("hevseXi",(sizeof(binning) / sizeof(binning[0]))-1,binning);
+    TH2F* heXivsXic0 = MakeTH2("heXivsXic0",(sizeof(binning) / sizeof(binning[0]))-1,binning);
+
     TH1F *hprompt    = MakeTH1("hprompt",   7, binning2);
 	  TH1F *hnonprompt = MakeTH1("hnonprompt" , 7, binning2);
 	  TH1F *hinclu     = MakeTH1("hinclu",     7, binning2);
     TH2F* hRPM_preliminary = new TH2F("hWRPM_preliminary","",60,1,20,60,1,20); hRPM_preliminary->Sumw2();
 
-    TH1F* hOA_Data = new TH1F("oa_data","",50,0,180); hOA_Data->Sumw2();
+    TH1F* hOA_Data1 = new TH1F("oa_data1","",50,0,180); hOA_Data1->Sumw2();
+     TH1F* hOA_Data2 = new TH1F("oa_data2","",50,0,180); hOA_Data2->Sumw2();
     TH1F* hOA_MC = new TH1F("oa_mc","",50,0,180); hOA_MC->Sumw2();
 
 	#if 1
@@ -979,7 +983,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
                 if (OPAngle_Tight_flag) hPtRS_TOA->Fill(Pt);
                 if (OPAngle_Stand_flag) hPtRS_SOA->Fill(Pt);
                 if (OPAngle_Loose_flag) hPtRS_LOA->Fill(Pt);
-                hOA_Data->Fill((acos(cosoa)/3.141592)*180);
+                hOA_Data1->Fill((acos(cosoa)/3.141592)*180);
             }
             if (e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag &&
 				Xi_Topology_Stand_flag && OPAngle_Stand_flag)
@@ -1038,6 +1042,7 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
                 if (OPAngle_Tight_flag) hPtWS_TOA->Fill(Pt);
                 if (OPAngle_Stand_flag) hPtWS_SOA->Fill(Pt);
                 if (OPAngle_Loose_flag) hPtWS_LOA->Fill(Pt);
+				hOA_Data2->Fill((acos(cosoa)/3.141592)*180);
             }
             if (e_Recon_Stand_flag && Xi_Recon_Stand_flag && e_PID_Stand_flag &&
 				Xi_Topology_Stand_flag && OPAngle_Stand_flag)
@@ -1209,6 +1214,10 @@ void eXiPairTree(TFile* F, bool IsMC, const char* SDIR, const char* TRIG, double
 						hMCRecoLevXic0_eRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
 						hMCRecoLevPair_eRec_stand->Fill(Pt,fWeightFit->Eval(mcptXic0));
 						if (mcc_flag==1) hMCRecoLevPromptXic0_eRec_stand->Fill(mcptXic0,fWeightFit->Eval(mcptXic0));
+
+            hevseXi->Fill(pTe,Pt);
+            heXivsXic0->Fill(Pt,mcptXic0);
+
 					}
 					if (echarge*vcharge>0 && fabs(mcXib)!=nullV)
 					{
