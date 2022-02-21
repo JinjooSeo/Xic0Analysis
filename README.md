@@ -3,6 +3,17 @@ Xic0 analysis code
 
 //-----------------------------------------------
 
+Feb. 21, 2022 (kimc)
+
+	- AliAnalysisTaskSEXic0Semileptonic.cxx
+		a. Extended all relevant histograms' pT upper limit (from 20 -> 24)
+		b. Tested the update works well and cause no problem, by using:
+			b-1. Grid, for both data (LHC18p) and MC (LHCMC3)
+			b-2. Offline event selection macro (Xic0AnaMakeRoot)
+		c. Plan to upload to AliPhysics for next train run
+
+//-----------------------------------------------
+
 Feb. 7, 2022 (kimc)
 
 	- AliAnalysisTaskSEXic0Semileptonic.cxx
